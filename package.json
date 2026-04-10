@@ -4,7 +4,7 @@
   "private": true,
   "description": "Tampermonkey userscript to unsend all your messages in an Instagram DM conversation",
   "author": "Catalin Teodorescu",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && tsx scripts/build.ts",
@@ -17,6 +17,7 @@
     "archiver": "^7.0.1",
     "esbuild": "^0.28.0",
     "javascript-obfuscator": "^5.4.1",
+    "sharp": "^0.34.5",
     "tsx": "^4.19.0",
     "typescript": "^6.0.2"
   }
