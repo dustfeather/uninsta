@@ -16,33 +16,43 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get version from package.json
-        id: version
-        run: echo "version=v$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
-
-      - name: Check if tag already exists
-        id: check
-        run: |
-          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/setup-node@v4
-        if: steps.check.outputs.exists == 'false'
         with:
           node-version: '20'
           cache: 'npm'
 
       - run: npm ci
-        if: steps.check.outputs.exists == 'false'
+
+      - name: Bump patch version
+        id: version
+        run: |
+          # Read current version, bump patch
+          CURRENT=$(node -p 'require("./package.json").version')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          PATCH=$((PATCH + 1))
+          NEW="${MAJOR}.${MINOR}.${PATCH}"
+          # Write back to package.json
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+            pkg.version = '${NEW}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          npm install --package-lock-only
+          echo "version=v${NEW}" >> "$GITHUB_OUTPUT"
+          echo "Bumped version: ${CURRENT} -> ${NEW}"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+          git push
 
       - run: npm run build
-        if: steps.check.outputs.exists == 'false'
 
       - name: Create tag and release
-        if: steps.check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
