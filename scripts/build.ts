@@ -8,6 +8,7 @@ import archiver from 'archiver';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'));
+const buildVersion = process.env.UNINSTA_VERSION || pkg.version;
 
 const obfuscatorOptions = {
   compact: true,
@@ -41,7 +42,7 @@ function bundleAndObfuscate(entryPoint: string): string {
 const tmHeader = `// ==UserScript==
 // @name            Uninsta
 // @description     Unsend all your messages in an Instagram DM conversation
-// @version         ${pkg.version}
+// @version         ${buildVersion}
 // @author          ${pkg.author}
 // @match           https://www.instagram.com/direct/*
 // @grant           none
@@ -53,7 +54,7 @@ const tmHeader = `// ==UserScript==
 const userscriptCode = bundleAndObfuscate(join(root, 'src/main.ts'));
 mkdirSync(join(root, 'dist'), { recursive: true });
 writeFileSync(join(root, 'dist/uninsta.user.js'), tmHeader + userscriptCode);
-console.log(`Built dist/uninsta.user.js (v${pkg.version})`);
+console.log(`Built dist/uninsta.user.js (v${buildVersion})`);
 
 // ── 2. Extension build ──────────────────────────────────────────────────────
 
@@ -77,7 +78,7 @@ const manifest = {
   manifest_version: 3,
   name: 'Uninsta',
   description: 'Unsend all your messages in an Instagram DM conversation',
-  version: pkg.version,
+  version: buildVersion,
   permissions: [] as string[],
   action: {
     default_icon: {
@@ -124,7 +125,7 @@ writeFileSync(join(extDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 // Copy icons
 cpSync(join(root, 'extension/icons'), join(extDir, 'icons'), { recursive: true });
 
-console.log(`Built dist/extension/ (v${pkg.version})`);
+console.log(`Built dist/extension/ (v${buildVersion})`);
 
 // ── 3. Zip extension ────────────────────────────────────────────────────────
 
