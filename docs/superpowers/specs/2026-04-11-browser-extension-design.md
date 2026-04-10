@@ -136,8 +136,8 @@ The build script produces both outputs in sequence:
 1. **Userscript build** (existing): esbuild bundle + minify -> obfuscate -> prepend TM header -> `dist/uninsta.user.js`
 2. **Extension build** (new):
    - esbuild bundle + minify `src/main.ts` -> obfuscate -> `dist/extension/content.js`
-   - esbuild bundle + minify `src/bridge.ts` -> `dist/extension/bridge.js` (tiny, no obfuscation needed)
-   - esbuild bundle + minify `src/background.ts` -> `dist/extension/background.js` (no obfuscation needed, it's 3 lines)
+   - esbuild bundle + minify `src/bridge.ts` -> obfuscate -> `dist/extension/bridge.js`
+   - esbuild bundle + minify `src/background.ts` -> obfuscate -> `dist/extension/background.js`
    - Generate `dist/extension/manifest.json` from template with version interpolated
    - Copy `extension/icons/*.png` to `dist/extension/icons/`
    - Zip `dist/extension/` into `dist/uninsta-extension.zip`
