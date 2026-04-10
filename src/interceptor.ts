@@ -18,11 +18,22 @@ export function installInterceptor(): void {
   const originalFetch = window.fetch;
 
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    if (!capturedAppId && init?.headers) {
-      const appId = extractAppId(init.headers);
-      if (appId) {
-        capturedAppId = appId;
-        console.log('[Uninsta] Captured x-ig-app-id:', appId);
+    if (!capturedAppId) {
+      // Check init.headers first (most common)
+      if (init?.headers) {
+        const appId = extractAppId(init.headers);
+        if (appId) {
+          capturedAppId = appId;
+          console.log('[Uninsta] Captured x-ig-app-id:', appId);
+        }
+      }
+      // Also check Request object headers (fetch(new Request(url, opts)))
+      if (!capturedAppId && input instanceof Request) {
+        const appId = input.headers.get('x-ig-app-id');
+        if (appId) {
+          capturedAppId = appId;
+          console.log('[Uninsta] Captured x-ig-app-id:', appId);
+        }
       }
     }
     return originalFetch.call(window, input, init);

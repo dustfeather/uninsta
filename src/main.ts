@@ -70,14 +70,17 @@ import { enterPickMode } from './picker';
       },
     });
 
-    engine.start();
+    engine.start().catch((err: Error) => {
+      log(`Unexpected fatal error: ${err.message}`, 'error');
+      setRunningState(uiElements, false);
+    });
   }
 
   function handleStop(): void {
     if (engine) {
       engine.stop();
-      setRunningState(uiElements, false);
-      uiElements.statusText.textContent = 'Status: Stopped';
+      // Keep Start disabled until onComplete fires to prevent concurrent engines
+      uiElements.statusText.textContent = 'Status: Stopping...';
     }
   }
 

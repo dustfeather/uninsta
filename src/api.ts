@@ -19,7 +19,7 @@ export async function fetchThreadMessages(
   auth: AuthCredentials,
 ): Promise<IGThreadResponse> {
   const url = cursor
-    ? `https://www.instagram.com/api/v1/direct_v2/threads/${threadId}/?cursor=${cursor}`
+    ? `https://www.instagram.com/api/v1/direct_v2/threads/${threadId}/?cursor=${encodeURIComponent(cursor)}`
     : `https://www.instagram.com/api/v1/direct_v2/threads/${threadId}/`;
 
   const resp = await fetch(url, {
