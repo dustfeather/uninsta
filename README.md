@@ -1,6 +1,10 @@
-# Uninsta
+<p align="center">
+  <img src="extension/icons/icon128.png" alt="Uninsta logo" width="128">
+</p>
 
-Bulk unsend your messages in Instagram DM conversations.
+<h1 align="center">Uninsta</h1>
+
+<p align="center">Bulk unsend your messages in Instagram DM conversations.</p>
 
 Uninsta uses Instagram's internal API to iterate through all your messages in a conversation and unsend them one by one, with built-in rate limiting to avoid triggering Instagram's abuse detection.
 
