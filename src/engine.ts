@@ -2,6 +2,7 @@ import type { AuthCredentials, Boundary, EngineCallbacks, EngineState, IGMessage
 import { fetchThreadMessages, unsendMessage } from './api';
 
 const BASE_DELETE_DELAY = 3500;
+const MAX_DELETE_DELAY = 15000;
 const DELETE_JITTER = 500;
 const FETCH_DELAY = 2000;
 const MAX_RETRIES = 3;
@@ -185,7 +186,7 @@ export class UnsendEngine {
         // Rate limited -- use retry_after from response + 3s cooldown
         const retryAfterMs = (result.retryAfter ?? 3) * 1000;
         const backoff = retryAfterMs + 3000;
-        this.deleteDelay += 1000; // permanently increase
+        this.deleteDelay = Math.min(this.deleteDelay + 1000, MAX_DELETE_DELAY);
         this.callbacks.onLog(
           `Rate limited (429). Waiting ${(backoff / 1000).toFixed(0)}s, increasing delay to ${(this.deleteDelay / 1000).toFixed(1)}s...`,
           'warn',
@@ -198,12 +199,10 @@ export class UnsendEngine {
         throw Object.assign(new Error('Auth failure'), { status: result.status });
       }
 
-      // Other errors (404 = already gone, etc.) -- skip
-      if (attempt === 1) {
-        this.callbacks.onLog(`HTTP ${result.status}, skipping message.`, 'warn');
-        this.state.skippedCount++;
-        return true; // treat as "handled", not a retry-worthy failure
-      }
+      // Other errors (404 = already gone, etc.) -- skip immediately, don't retry
+      this.callbacks.onLog(`HTTP ${result.status}, skipping message.`, 'warn');
+      this.state.skippedCount++;
+      return true;
     }
 
     return false;
