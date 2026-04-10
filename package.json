@@ -18,6 +18,6 @@
     "esbuild": "^0.25.0",
     "javascript-obfuscator": "^4.1.1",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^6.0.2"
   }
 }
