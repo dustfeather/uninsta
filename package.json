@@ -15,7 +15,7 @@
     "@types/chrome": "^0.1.40",
     "@types/node": "^25.6.0",
     "archiver": "^7.0.1",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.0",
     "javascript-obfuscator": "^4.1.1",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
