@@ -69,7 +69,7 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
         <span id="uninsta-picker-preview">No message selected</span>
         <button id="uninsta-btn-clear-picker" style="display:none" title="Clear">&times;</button>
       </div>
-      <input type="datetime-local" id="uninsta-datetime" title="Unsend messages before this date">
+      <input type="datetime-local" id="uninsta-datetime" title="Only unsend messages newer than this date">
     </div>
     <div id="uninsta-controls">
       <button id="uninsta-btn-start">Unsend All</button>
@@ -211,6 +211,8 @@ export function injectTriggerButton(btn: HTMLButtonElement): void {
 /**
  * Append a log entry to the log area.
  */
+const MAX_LOG_ENTRIES = 500;
+
 export function appendLog(
   logArea: HTMLDivElement,
   message: string,
@@ -220,6 +222,10 @@ export function appendLog(
   entry.className = `log-entry log-${level}`;
   entry.textContent = message;
   logArea.appendChild(entry);
+  // Cap log entries to prevent DOM bloat on large conversations
+  while (logArea.children.length > MAX_LOG_ENTRIES) {
+    logArea.removeChild(logArea.firstChild!);
+  }
   logArea.scrollTop = logArea.scrollHeight;
 }
 
