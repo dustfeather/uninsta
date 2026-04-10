@@ -114,6 +114,13 @@ import { enterPickMode } from './picker';
 
     const triggerBtn = createTriggerButton(uiElements.panel, refreshStatusInfo);
     injectTriggerButton(triggerBtn);
+
+    // Listen for toolbar icon toggle (from extension bridge script)
+    document.addEventListener('uninsta-toggle', () => {
+      const isVisible = uiElements.panel.style.display !== 'none';
+      uiElements.panel.style.display = isVisible ? 'none' : 'flex';
+      if (!isVisible) refreshStatusInfo();
+    });
   }
 
   // Wait for the page to be ready
