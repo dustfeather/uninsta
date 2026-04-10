@@ -15,7 +15,9 @@ Uninsta uses Instagram's internal API to iterate through all your messages in a 
 
 ## Install
 
-### Browser Extension (Chrome / Edge / Firefox)
+Pick **one** of the two methods below -- you don't need both.
+
+### Browser Extension (Chrome / Edge / Firefox) -- Recommended
 
 1. Go to the [latest release](../../releases/latest)
 2. Download `uninsta-extension.zip`
