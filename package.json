@@ -1,6 +1,6 @@
 {
   "name": "uninsta",
-  "version": "0.1.13",
+  "version": "0.0.0-dev",
   "private": true,
   "description": "Tampermonkey userscript to unsend all your messages in an Instagram DM conversation",
   "author": "Catalin Teodorescu",
