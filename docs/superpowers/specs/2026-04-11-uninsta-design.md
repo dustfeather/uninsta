@@ -181,16 +181,18 @@ The timestamp input (`datetime-local`) is always available as an alternative/fal
 ### Dependencies
 
 - `typescript` -- type checking
-- `esbuild` -- bundling
+- `esbuild` -- bundling and minification
+- `javascript-obfuscator` -- code obfuscation
 - No runtime dependencies
 
 ### Build Script (`scripts/build.ts`)
 
 A Node script (run via `tsx`) that:
 1. Reads the version from `package.json`
-2. Calls esbuild to bundle `src/main.ts` into an IIFE string
-3. Prepends the Tampermonkey metadata header (with version interpolated)
-4. Writes the result to `dist/uninsta.user.js`
+2. Calls esbuild to bundle `src/main.ts` into a single IIFE string, with minification enabled (`minify: true`)
+3. Passes the minified output through `javascript-obfuscator` (medium preset: control flow flattening, string encoding, identifier mangling)
+4. Prepends the Tampermonkey metadata header (with version interpolated) -- the header must remain unobfuscated for Tampermonkey to parse it
+5. Writes the result to `dist/uninsta.user.js`
 
 ### package.json Scripts
 
