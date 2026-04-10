@@ -1,5 +1,4 @@
 import { buildSync } from 'esbuild';
-import JavaScriptObfuscator from 'javascript-obfuscator';
 import { readFileSync, writeFileSync, mkdirSync, cpSync, createWriteStream } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -10,21 +9,7 @@ const root = join(__dirname, '..');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'));
 const buildVersion = process.env.UNINSTA_VERSION || pkg.version;
 
-const obfuscatorOptions = {
-  compact: true,
-  controlFlowFlattening: true,
-  controlFlowFlatteningThreshold: 0.5,
-  deadCodeInjection: false,
-  stringArray: true,
-  stringArrayEncoding: ['base64' as const],
-  stringArrayThreshold: 0.75,
-  identifierNamesGenerator: 'hexadecimal' as const,
-  renameGlobals: false,
-  selfDefending: false,
-  transformObjectKeys: true,
-};
-
-function bundleAndObfuscate(entryPoint: string): string {
+function bundle(entryPoint: string): string {
   const result = buildSync({
     entryPoints: [entryPoint],
     bundle: true,
@@ -33,8 +18,7 @@ function bundleAndObfuscate(entryPoint: string): string {
     target: 'es2020',
     write: false,
   });
-  const bundled = new TextDecoder().decode(result.outputFiles[0].contents);
-  return JavaScriptObfuscator.obfuscate(bundled, obfuscatorOptions).getObfuscatedCode();
+  return new TextDecoder().decode(result.outputFiles[0].contents);
 }
 
 // ── 1. Userscript build ─────────────────────────────────────────────────────
@@ -51,7 +35,7 @@ const tmHeader = `// ==UserScript==
 // ==/UserScript==
 `;
 
-const userscriptCode = bundleAndObfuscate(join(root, 'src/main.ts'));
+const userscriptCode = bundle(join(root, 'src/main.ts'));
 mkdirSync(join(root, 'dist'), { recursive: true });
 writeFileSync(join(root, 'dist/uninsta.user.js'), tmHeader + userscriptCode);
 console.log(`Built dist/uninsta.user.js (v${buildVersion})`);
@@ -62,16 +46,13 @@ const extDir = join(root, 'dist/extension');
 mkdirSync(join(extDir, 'icons'), { recursive: true });
 
 // Content script (same code as userscript, no TM header)
-const contentCode = bundleAndObfuscate(join(root, 'src/main.ts'));
-writeFileSync(join(extDir, 'content.js'), contentCode);
+writeFileSync(join(extDir, 'content.js'), bundle(join(root, 'src/main.ts')));
 
 // Bridge script
-const bridgeCode = bundleAndObfuscate(join(root, 'src/bridge.ts'));
-writeFileSync(join(extDir, 'bridge.js'), bridgeCode);
+writeFileSync(join(extDir, 'bridge.js'), bundle(join(root, 'src/bridge.ts')));
 
 // Background service worker
-const backgroundCode = bundleAndObfuscate(join(root, 'src/background.ts'));
-writeFileSync(join(extDir, 'background.js'), backgroundCode);
+writeFileSync(join(extDir, 'background.js'), bundle(join(root, 'src/background.ts')));
 
 // Manifest
 const manifest = {
