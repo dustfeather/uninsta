@@ -1,0 +1,19 @@
+{
+  "name": "uninsta",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tampermonkey userscript to unsend all your messages in an Instagram DM conversation",
+  "author": "Catalin Teodorescu",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && tsx scripts/build.ts",
+    "dev": "tsx scripts/dev.ts"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "javascript-obfuscator": "^4.1.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
