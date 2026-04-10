@@ -24,7 +24,7 @@ export function installInterceptor(): void {
         const appId = extractAppId(init.headers);
         if (appId) {
           capturedAppId = appId;
-          console.log('[Uninsta] Captured x-ig-app-id:', appId);
+          console.log('[unInsta] Captured x-ig-app-id:', appId);
         }
       }
       // Also check Request object headers (fetch(new Request(url, opts)))
@@ -32,7 +32,7 @@ export function installInterceptor(): void {
         const appId = input.headers.get('x-ig-app-id');
         if (appId) {
           capturedAppId = appId;
-          console.log('[Uninsta] Captured x-ig-app-id:', appId);
+          console.log('[unInsta] Captured x-ig-app-id:', appId);
         }
       }
     }

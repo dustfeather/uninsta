@@ -1,5 +1,5 @@
 export const PANEL_CSS = `
-/* Uninsta Panel */
+/* unInsta Panel */
 #uninsta-panel {
   position: fixed;
   z-index: 10000;

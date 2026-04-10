@@ -46,7 +46,7 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
 
   panel.innerHTML = `
     <div id="uninsta-header">
-      <h3>Uninsta</h3>
+      <h3>unInsta</h3>
       <button id="uninsta-btn-minimize" title="Minimize">&minus;</button>
       <button id="uninsta-btn-close" title="Close">&times;</button>
     </div>
@@ -168,7 +168,7 @@ function getBoundaryFromUI(elements: UIElements): Boundary | null {
 export function createTriggerButton(panel: HTMLDivElement, onShow?: () => void): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.id = 'uninsta-trigger';
-  btn.title = 'Uninsta - Unsend messages';
+  btn.title = 'unInsta - Unsend messages';
   btn.innerHTML = '\u2716'; // X mark character
   btn.addEventListener('click', () => {
     const isVisible = panel.style.display !== 'none';
