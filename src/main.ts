@@ -1,4 +1,112 @@
-(function () {
+import type { Boundary, EngineState } from './types';
+import { installInterceptor } from './interceptor';
+import { getAuth, getThreadId } from './auth';
+import { UnsendEngine } from './engine';
+import {
+  injectStyles,
+  buildPanel,
+  createTriggerButton,
+  injectTriggerButton,
+  appendLog,
+  updateProgress,
+  setRunningState,
+} from './ui';
+import type { UIElements } from './ui';
+import { enterPickMode } from './picker';
+
+(function uninsta() {
   'use strict';
-  console.log('Uninsta loaded');
+
+  // Install the fetch interceptor immediately to start capturing x-ig-app-id
+  installInterceptor();
+
+  let engine: UnsendEngine | null = null;
+  let uiElements: UIElements;
+  let pickModeCleanup: (() => void) | null = null;
+
+  function log(message: string, level: 'info' | 'success' | 'warn' | 'error' | 'debug'): void {
+    appendLog(uiElements.logArea, message, level);
+  }
+
+  function handleStart(boundary: Boundary | null): void {
+    const threadId = getThreadId();
+    if (!threadId) {
+      log('Navigate to a DM conversation first.', 'warn');
+      return;
+    }
+
+    const result = getAuth();
+    if (!result.auth) {
+      log(result.reason, 'error');
+      return;
+    }
+
+    // Clear log
+    uiElements.logArea.innerHTML = '';
+
+    setRunningState(uiElements, true);
+
+    engine = new UnsendEngine(threadId, result.auth, boundary, {
+      onLog: log,
+      onProgress: (state: EngineState) => updateProgress(uiElements, state),
+      onComplete: (state: EngineState) => {
+        setRunningState(uiElements, false);
+        updateProgress(uiElements, state);
+        uiElements.statusText.textContent = 'Status: Done';
+        log(
+          `Complete. Unsent: ${state.unsentCount}, Failed: ${state.failedCount}, Skipped: ${state.skippedCount}`,
+          'info',
+        );
+      },
+    });
+
+    engine.start();
+  }
+
+  function handleStop(): void {
+    if (engine) {
+      engine.stop();
+      setRunningState(uiElements, false);
+      uiElements.statusText.textContent = 'Status: Stopped';
+    }
+  }
+
+  function handlePickModeEnter(): void {
+    if (pickModeCleanup) pickModeCleanup();
+
+    pickModeCleanup = enterPickMode(
+      uiElements,
+      (itemId: string, preview: string) => {
+        uiElements.pickerPreview.textContent = preview;
+        uiElements.pickerPreview.setAttribute('data-item-id', itemId);
+        uiElements.btnClearPicker.style.display = '';
+        log(`Boundary set: ${preview} (ID: ${itemId})`, 'info');
+        pickModeCleanup = null;
+      },
+      () => {
+        log('Pick mode cancelled or failed to read message ID. Use the date input instead.', 'warn');
+        pickModeCleanup = null;
+      },
+    );
+  }
+
+  function init(): void {
+    injectStyles();
+
+    uiElements = buildPanel({
+      onStart: handleStart,
+      onStop: handleStop,
+      onPickModeEnter: handlePickModeEnter,
+    });
+
+    const triggerBtn = createTriggerButton(uiElements.panel);
+    injectTriggerButton(triggerBtn);
+  }
+
+  // Wait for the page to be ready
+  if (document.readyState === 'complete') {
+    init();
+  } else {
+    window.addEventListener('load', init);
+  }
 })();
