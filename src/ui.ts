@@ -54,6 +54,13 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
       <div class="status-row">
         <span id="uninsta-status-text">Status: Ready</span>
       </div>
+      <div class="status-row">
+        <span id="uninsta-status-thread">Thread: --</span>
+        <span id="uninsta-status-user">User: --</span>
+      </div>
+      <div class="status-row">
+        <span id="uninsta-status-appid">App ID: Not captured</span>
+      </div>
     </div>
     <div id="uninsta-boundary">
       <label>Boundary (optional)</label>
@@ -158,7 +165,7 @@ function getBoundaryFromUI(elements: UIElements): Boundary | null {
 /**
  * Create the trigger button to toggle the panel.
  */
-export function createTriggerButton(panel: HTMLDivElement): HTMLButtonElement {
+export function createTriggerButton(panel: HTMLDivElement, onShow?: () => void): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.id = 'uninsta-trigger';
   btn.title = 'Uninsta - Unsend messages';
@@ -166,6 +173,7 @@ export function createTriggerButton(panel: HTMLDivElement): HTMLButtonElement {
   btn.addEventListener('click', () => {
     const isVisible = panel.style.display !== 'none';
     panel.style.display = isVisible ? 'none' : 'flex';
+    if (!isVisible && onShow) onShow();
   });
   return btn;
 }
@@ -218,15 +226,46 @@ export function appendLog(
 /**
  * Update the progress display.
  */
+let progressStartTime = 0;
+
 export function updateProgress(
   elements: UIElements,
   state: EngineState,
 ): void {
-  const total = state.totalFound || 1;
   const done = state.unsentCount + state.failedCount + state.skippedCount;
-  const pct = state.totalFound > 0 ? Math.round((done / total) * 100) : 0;
-  elements.progressText.textContent = `[${done}/${state.totalFound}] ${pct}%`;
+  const pct = state.totalFound > 0 ? Math.round((done / state.totalFound) * 100) : 0;
+
+  // Track start time for ETA
+  if (done === 1) progressStartTime = Date.now();
+
+  let etaStr = '';
+  if (done > 1 && state.totalFound > done) {
+    const elapsed = Date.now() - progressStartTime;
+    const avgPerMsg = elapsed / (done - 1);
+    const remaining = (state.totalFound - done) * avgPerMsg;
+    const mins = Math.ceil(remaining / 60000);
+    etaStr = mins > 0 ? ` | ETA: ~${mins}min` : '';
+  }
+
+  elements.progressText.textContent = `[${done}/${state.totalFound}] ${pct}%${etaStr}`;
   elements.progressBarFill.style.width = `${pct}%`;
+}
+
+/**
+ * Update the status info display with thread ID, user ID, and app ID state.
+ */
+export function updateStatusInfo(
+  panel: HTMLDivElement,
+  threadId: string | null,
+  userId: string | null,
+  appIdCaptured: boolean,
+): void {
+  const threadEl = panel.querySelector('#uninsta-status-thread');
+  const userEl = panel.querySelector('#uninsta-status-user');
+  const appIdEl = panel.querySelector('#uninsta-status-appid');
+  if (threadEl) threadEl.textContent = `Thread: ${threadId ?? '--'}`;
+  if (userEl) userEl.textContent = `User: ${userId ?? '--'}`;
+  if (appIdEl) appIdEl.textContent = `App ID: ${appIdCaptured ? 'Captured' : 'Not captured'}`;
 }
 
 /**

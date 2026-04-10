@@ -1,5 +1,5 @@
 import type { Boundary, EngineState } from './types';
-import { installInterceptor } from './interceptor';
+import { installInterceptor, getAppId } from './interceptor';
 import { getAuth, getThreadId } from './auth';
 import { UnsendEngine } from './engine';
 import {
@@ -9,6 +9,7 @@ import {
   injectTriggerButton,
   appendLog,
   updateProgress,
+  updateStatusInfo,
   setRunningState,
 } from './ui';
 import type { UIElements } from './ui';
@@ -28,7 +29,16 @@ import { enterPickMode } from './picker';
     appendLog(uiElements.logArea, message, level);
   }
 
+  function refreshStatusInfo(): void {
+    const threadId = getThreadId();
+    const cookie = document.cookie;
+    const userIdMatch = cookie.match(/(?:^|;\s*)ds_user_id=([^;]*)/);
+    const userId = userIdMatch ? decodeURIComponent(userIdMatch[1]) : null;
+    updateStatusInfo(uiElements.panel, threadId, userId, getAppId() !== null);
+  }
+
   function handleStart(boundary: Boundary | null): void {
+    refreshStatusInfo();
     const threadId = getThreadId();
     if (!threadId) {
       log('Navigate to a DM conversation first.', 'warn');
@@ -99,7 +109,7 @@ import { enterPickMode } from './picker';
       onPickModeEnter: handlePickModeEnter,
     });
 
-    const triggerBtn = createTriggerButton(uiElements.panel);
+    const triggerBtn = createTriggerButton(uiElements.panel, refreshStatusInfo);
     injectTriggerButton(triggerBtn);
   }
 

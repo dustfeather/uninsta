@@ -175,15 +175,16 @@ export class UnsendEngine {
 
   private async unsendWithRetry(msg: IGMessage): Promise<boolean> {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      const status = await unsendMessage(this.threadId, msg.item_id, this.auth);
+      const result = await unsendMessage(this.threadId, msg.item_id, this.auth);
 
-      if (status === 200 || status === 204) {
+      if (result.status === 200 || result.status === 204) {
         return true;
       }
 
-      if (status === 429) {
-        // Rate limited -- back off
-        const backoff = 6000 + attempt * 2000;
+      if (result.status === 429) {
+        // Rate limited -- use retry_after from response + 3s cooldown
+        const retryAfterMs = (result.retryAfter ?? 3) * 1000;
+        const backoff = retryAfterMs + 3000;
         this.deleteDelay += 1000; // permanently increase
         this.callbacks.onLog(
           `Rate limited (429). Waiting ${(backoff / 1000).toFixed(0)}s, increasing delay to ${(this.deleteDelay / 1000).toFixed(1)}s...`,
@@ -193,13 +194,13 @@ export class UnsendEngine {
         continue;
       }
 
-      if (status === 401 || status === 403) {
-        throw Object.assign(new Error('Auth failure'), { status });
+      if (result.status === 401 || result.status === 403) {
+        throw Object.assign(new Error('Auth failure'), { status: result.status });
       }
 
       // Other errors (404 = already gone, etc.) -- skip
       if (attempt === 1) {
-        this.callbacks.onLog(`HTTP ${status}, skipping message.`, 'warn');
+        this.callbacks.onLog(`HTTP ${result.status}, skipping message.`, 'warn');
         this.state.skippedCount++;
         return true; // treat as "handled", not a retry-worthy failure
       }
