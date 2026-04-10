@@ -46,7 +46,7 @@ const tmHeader = `// ==UserScript==
 // @match           https://www.instagram.com/direct/*
 // @grant           none
 // @run-at          document-idle
-// @license         MIT
+// @license         GPL-3.0-only
 // ==/UserScript==
 `;
 
@@ -93,6 +93,8 @@ const manifest = {
     '32': 'icons/icon32.png',
     '48': 'icons/icon48.png',
     '128': 'icons/icon128.png',
+    '256': 'icons/icon256.png',
+    '512': 'icons/icon512.png',
   },
   content_scripts: [
     {
