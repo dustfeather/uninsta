@@ -24,7 +24,7 @@ function bundle(entryPoint: string): string {
 // ── 1. Userscript build ─────────────────────────────────────────────────────
 
 const tmHeader = `// ==UserScript==
-// @name            Uninsta
+// @name            unInsta
 // @description     Unsend all your messages in an Instagram DM conversation
 // @version         ${buildVersion}
 // @author          ${pkg.author}
@@ -57,7 +57,7 @@ writeFileSync(join(extDir, 'background.js'), bundle(join(root, 'src/background.t
 // Manifest
 const manifest = {
   manifest_version: 3,
-  name: 'Uninsta',
+  name: 'unInsta',
   description: 'Unsend all your messages in an Instagram DM conversation',
   version: buildVersion,
   permissions: [] as string[],
@@ -68,7 +68,7 @@ const manifest = {
       '48': 'icons/icon48.png',
       '128': 'icons/icon128.png',
     },
-    default_title: 'Uninsta - Toggle panel',
+    default_title: 'unInsta - Toggle panel',
   },
   icons: {
     '16': 'icons/icon16.png',

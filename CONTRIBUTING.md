@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to Uninsta.
+Thanks for your interest in contributing to unInsta.
 
 ## Getting Started
 
