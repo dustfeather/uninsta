@@ -41,15 +41,20 @@ export async function fetchThreadMessages(
   return resp.json();
 }
 
+export interface UnsendResult {
+  status: number;
+  retryAfter?: number; // seconds, from 429 response body
+}
+
 /**
  * Unsend (delete) a single message.
- * Returns the HTTP status code.
+ * Returns the HTTP status code and retry_after (if rate limited).
  */
 export async function unsendMessage(
   threadId: string,
   itemId: string,
   auth: AuthCredentials,
-): Promise<number> {
+): Promise<UnsendResult> {
   const url = `https://www.instagram.com/api/v1/direct_v2/threads/${threadId}/items/${itemId}/delete/`;
 
   const resp = await fetch(url, {
@@ -61,5 +66,14 @@ export async function unsendMessage(
     credentials: 'include',
   });
 
-  return resp.status;
+  if (resp.status === 429) {
+    let retryAfter: number | undefined;
+    try {
+      const body = await resp.json();
+      retryAfter = body.retry_after;
+    } catch {}
+    return { status: 429, retryAfter };
+  }
+
+  return { status: resp.status };
 }
