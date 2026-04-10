@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="extension/icons/icon128.png" alt="Uninsta logo" width="128">
+  <img src="extension/icons/icon128.png" alt="unInsta logo" width="128">
 </p>
 
-<h1 align="center">Uninsta</h1>
+<h1 align="center">unInsta</h1>
 
 <p align="center">Bulk unsend your messages in Instagram DM conversations.</p>
 
-Uninsta uses Instagram's internal API to iterate through all your messages in a conversation and unsend them one by one, with built-in rate limiting to avoid triggering Instagram's abuse detection.
+unInsta uses Instagram's internal API to iterate through all your messages in a conversation and unsend them one by one, with built-in rate limiting to avoid triggering Instagram's abuse detection.
 
 ## Features
 
@@ -48,14 +48,14 @@ Pick **one** of the two methods below -- you don't need both.
 ## Usage
 
 1. Open Instagram and navigate to a DM conversation
-2. Click the Uninsta trigger button in the chat header (or the extension icon in the toolbar)
+2. Click the unInsta trigger button in the chat header (or the extension icon in the toolbar)
 3. Optionally set a boundary (date or pick a specific message)
 4. Click "Unsend All"
 5. Watch the progress in the log panel
 
 ## How It Works
 
-Uninsta runs as a content script on `instagram.com/direct/*`. On load, it intercepts Instagram's own API requests to capture authentication credentials. When you click "Unsend All", it:
+unInsta runs as a content script on `instagram.com/direct/*`. On load, it intercepts Instagram's own API requests to capture authentication credentials. When you click "Unsend All", it:
 
 1. Reads your user ID from cookies
 2. Extracts the thread ID from the URL
@@ -77,6 +77,10 @@ Outputs:
 - `dist/uninsta.user.js` -- Tampermonkey userscript
 - `dist/uninsta-extension.zip` -- Browser extension
 - `dist/extension/` -- Unpacked extension directory
+
+## Acknowledgements
+
+Inspired by [Undiscord](https://github.com/victornpb/undiscord) by victornpb, which does the same thing for Discord messages.
 
 ## License
 

@@ -25,7 +25,7 @@ You can expect an initial response within 72 hours. We will work with you to und
 
 ## Scope
 
-Uninsta runs entirely in your browser and communicates only with `instagram.com` using your existing session. It does not collect, transmit, or store any data externally. The security scope includes:
+unInsta runs entirely in your browser and communicates only with `instagram.com` using your existing session. It does not collect, transmit, or store any data externally. The security scope includes:
 
 - Credential handling (cookies, tokens) within the browser context
 - API request construction and data handling
