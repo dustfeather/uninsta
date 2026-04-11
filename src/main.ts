@@ -1,5 +1,5 @@
 import type { Boundary, EngineState } from './types';
-import { installInterceptor, getAppId } from './interceptor';
+import { installInterceptor, getAppId, tryExtractAppIdFromPage } from './interceptor';
 import { getAuth, getThreadId } from './auth';
 import { UnsendEngine } from './engine';
 import {
@@ -34,7 +34,12 @@ import { enterPickMode } from './picker';
     const cookie = document.cookie;
     const userIdMatch = cookie.match(/(?:^|;\s*)ds_user_id=([^;]*)/);
     const userId = userIdMatch ? decodeURIComponent(userIdMatch[1]) : null;
-    updateStatusInfo(uiElements.panel, threadId, userId, getAppId() !== null);
+    const appIdCaptured = getAppId() !== null;
+    updateStatusInfo(uiElements.panel, threadId, userId, appIdCaptured);
+    const retryBtn = uiElements.panel.querySelector('#uninsta-btn-retry-appid');
+    if (retryBtn) {
+      retryBtn.classList.toggle('captured', appIdCaptured);
+    }
   }
 
   function handleStart(boundary: Boundary | null): void {
@@ -114,6 +119,24 @@ import { enterPickMode } from './picker';
 
     const triggerBtn = createTriggerButton(uiElements.panel, refreshStatusInfo);
     injectTriggerButton(triggerBtn);
+
+    // Wire up retry app ID button
+    const retryBtn = uiElements.panel.querySelector('#uninsta-btn-retry-appid');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        if (tryExtractAppIdFromPage()) {
+          log('App ID captured from page.', 'success');
+          retryBtn.classList.add('captured');
+        } else {
+          log('App ID not found. Try switching chats or scrolling, then retry.', 'warn');
+        }
+        refreshStatusInfo();
+      });
+    }
+
+    // Try to capture app ID from page on init
+    tryExtractAppIdFromPage();
+    refreshStatusInfo();
 
     // Listen for toolbar icon toggle (from extension bridge script)
     document.addEventListener('uninsta-toggle', () => {

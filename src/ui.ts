@@ -54,6 +54,7 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
       </div>
       <div class="status-row">
         <span id="uninsta-status-appid">App ID: Not captured</span>
+        <button id="uninsta-btn-retry-appid" title="Scan page for App ID">Retry</button>
       </div>
     </div>
     <div id="uninsta-boundary">
