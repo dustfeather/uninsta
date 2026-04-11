@@ -1,4 +1,4 @@
-import type { AuthCredentials, Boundary, EngineCallbacks, EngineState, IGMessage } from './types';
+import type { AuthCredentials, Boundary, EngineCallbacks, EngineState, IGMessage, IGThreadInfo } from './types';
 import { fetchThreadMessages, unsendMessage } from './api';
 
 const BASE_DELETE_DELAY = 3500;
@@ -15,21 +15,6 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Determine the effective boundary timestamp in microseconds.
- * If both picker and datetime boundaries are set, use the more restrictive one (the newer/larger timestamp).
- */
-function resolveBoundaryTimestamp(boundary: Boundary | null): number | null {
-  if (!boundary) return null;
-
-  const values: number[] = [];
-  if (boundary.timestamp != null) values.push(boundary.timestamp);
-  // messageId boundary is resolved to a timestamp during the fetch loop (see engine loop below).
-  // This function only handles the timestamp input.
-  if (values.length === 0) return null;
-  return Math.max(...values);
-}
-
 export class UnsendEngine {
   private state: EngineState = {
     running: false,
@@ -44,7 +29,7 @@ export class UnsendEngine {
   private abortFlag = false;
 
   constructor(
-    private threadId: string,
+    private threadInfo: IGThreadInfo,
     private auth: AuthCredentials,
     private boundary: Boundary | null,
     private callbacks: EngineCallbacks,
@@ -63,13 +48,14 @@ export class UnsendEngine {
     this.deleteDelay = BASE_DELETE_DELAY;
     this.callbacks.onProgress(this.state);
 
-    const boundaryTimestamp = resolveBoundaryTimestamp(this.boundary);
+    const boundaryTimestamp = this.boundary?.timestamp ?? null;
     const boundaryMessageId = this.boundary?.messageId ?? null;
 
     let cursor: string | null = null;
     let reachedBoundary = false;
 
     this.callbacks.onLog('Starting unsend process...', 'info');
+    this.callbacks.onLog(`Thread: ${this.threadInfo.threadFbid}`, 'debug');
 
     try {
       while (!reachedBoundary) {
@@ -81,40 +67,40 @@ export class UnsendEngine {
         this.state.currentPage++;
         this.callbacks.onLog(`Fetching page ${this.state.currentPage}...`, 'debug');
 
-        const data = await fetchThreadMessages(this.threadId, cursor, this.auth);
-        const items = data.thread.items;
+        const data = await fetchThreadMessages(this.threadInfo.threadFbid, cursor, this.auth);
+        const messages = data.messages;
 
-        if (!items || items.length === 0) {
+        if (!messages || messages.length === 0) {
           this.callbacks.onLog('No more messages found.', 'info');
           break;
         }
 
         // Filter to own messages
-        const ownMessages = items.filter(
-          (msg) => String(msg.user_id) === this.auth.userId,
+        const ownMessages = messages.filter(
+          (msg) => String(msg.sender_id) === this.auth.userId,
         );
 
         for (const msg of ownMessages) {
           if (this.abortFlag) break;
 
           // Check boundary by message ID
-          if (boundaryMessageId && msg.item_id === boundaryMessageId) {
+          if (boundaryMessageId && msg.message_id === boundaryMessageId) {
             reachedBoundary = true;
             this.callbacks.onLog('Reached boundary message. Stopping.', 'info');
             break;
           }
 
-          // Check boundary by timestamp
-          if (boundaryTimestamp != null && msg.timestamp < boundaryTimestamp) {
+          // Check boundary by timestamp (messages come newest-first)
+          if (boundaryTimestamp != null && msg.timestamp_ms < boundaryTimestamp) {
             reachedBoundary = true;
             this.callbacks.onLog('Reached timestamp boundary. Stopping.', 'info');
             break;
           }
 
           this.state.totalFound++;
-          const preview = msg.text
-            ? `"${msg.text.substring(0, 40)}${msg.text.length > 40 ? '...' : ''}"`
-            : `[${msg.item_type}]`;
+          const preview = msg.message?.text
+            ? `"${msg.message.text.substring(0, 40)}${msg.message.text.length > 40 ? '...' : ''}"`
+            : `[${msg.__typename || 'media'}]`;
 
           this.callbacks.onLog(
             `[${this.state.unsentCount + this.state.failedCount + 1}] Unsending ${preview}`,
@@ -144,16 +130,17 @@ export class UnsendEngine {
           await wait(delay);
         }
 
-        // Check if there are more pages
-        if (
-          !data.thread.has_older ||
-          data.thread.oldest_cursor === 'MINCURSOR'
-        ) {
+        // Check if there are more pages (Relay pagination)
+        if (!data.pageInfo.has_previous_page && !data.pageInfo.end_cursor) {
           this.callbacks.onLog('Reached end of conversation.', 'info');
           break;
         }
 
-        cursor = data.thread.oldest_cursor;
+        cursor = data.pageInfo.end_cursor;
+        if (!cursor) {
+          this.callbacks.onLog('No more pages.', 'info');
+          break;
+        }
 
         // Delay between page fetches
         await wait(FETCH_DELAY);
@@ -176,14 +163,13 @@ export class UnsendEngine {
 
   private async unsendWithRetry(msg: IGMessage): Promise<boolean> {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      const result = await unsendMessage(this.threadId, msg.item_id, this.auth);
+      const result = await unsendMessage(this.threadInfo.threadId, msg.message_id, this.auth);
 
       if (result.status === 200 || result.status === 204) {
         return true;
       }
 
       if (result.status === 429) {
-        // Rate limited -- use retry_after from response + 3s cooldown
         const retryAfterMs = (result.retryAfter ?? 3) * 1000;
         const backoff = retryAfterMs + 3000;
         this.deleteDelay = Math.min(this.deleteDelay + 1000, MAX_DELETE_DELAY);
@@ -199,7 +185,7 @@ export class UnsendEngine {
         throw Object.assign(new Error('Auth failure'), { status: result.status });
       }
 
-      // Other errors (404 = already gone, etc.) -- skip immediately, don't retry
+      // Other errors -- skip immediately
       this.callbacks.onLog(`HTTP ${result.status}, skipping message.`, 'warn');
       this.state.skippedCount++;
       return true;
