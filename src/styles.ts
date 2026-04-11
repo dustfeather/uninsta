@@ -1,5 +1,5 @@
 export const PANEL_CSS = `
-/* unInsta Panel */
+/* unInsta Panel - distinct dark theme, not Instagram's variables */
 #uninsta-panel {
   position: fixed;
   z-index: 10000;
@@ -11,27 +11,20 @@ export const PANEL_CSS = `
   max-height: 70vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 14px;
-  color: var(--ig-primary-text, #262626);
-  background: var(--ig-primary-background, #fff);
-  border: 1px solid var(--ig-elevated-separator, #dbdbdb);
+  color: #e4e6eb;
+  background: #1a1a2e;
+  border: 1px solid #30305a;
   border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
   overflow: hidden;
 }
 
-#uninsta-panel.dark {
-  color: var(--ig-primary-text, #f5f5f5);
-  background: var(--ig-primary-background, #000);
-  border-color: var(--ig-elevated-separator, #363636);
-}
-
-/* Header */
+/* Header - gradient accent bar */
 #uninsta-header {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: var(--ig-secondary-background, #fafafa);
-  border-bottom: 1px solid var(--ig-elevated-separator, #dbdbdb);
+  background: linear-gradient(135deg, #833AB4 0%, #C13584 40%, #E1306C 70%, #F77737 100%);
   cursor: grab;
   user-select: none;
 }
@@ -39,49 +32,57 @@ export const PANEL_CSS = `
 #uninsta-header h3 {
   margin: 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   flex-grow: 1;
+  color: #fff;
+  letter-spacing: 0.3px;
 }
 
 #uninsta-header button {
-  background: none;
+  background: rgba(255,255,255,0.2);
   border: none;
-  font-size: 18px;
+  font-size: 14px;
   cursor: pointer;
-  color: var(--ig-secondary-text, #8e8e8e);
-  padding: 0 4px;
+  color: #fff;
+  padding: 2px 8px;
   line-height: 1;
+  border-radius: 4px;
+  margin-left: 4px;
 }
 
 #uninsta-header button:hover {
-  color: var(--ig-primary-text, #262626);
+  background: rgba(255,255,255,0.35);
 }
 
 /* Status */
 #uninsta-status {
-  padding: 8px 16px;
+  padding: 10px 16px;
   font-size: 12px;
-  color: var(--ig-secondary-text, #8e8e8e);
-  border-bottom: 1px solid var(--ig-elevated-separator, #dbdbdb);
+  color: #8b8fa3;
+  background: #16162b;
+  border-bottom: 1px solid #30305a;
 }
 
 #uninsta-status .status-row {
   display: flex;
   gap: 12px;
+  margin-bottom: 2px;
 }
 
 /* Boundary */
 #uninsta-boundary {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--ig-elevated-separator, #dbdbdb);
+  background: #1a1a2e;
+  border-bottom: 1px solid #30305a;
 }
 
 #uninsta-boundary label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--ig-secondary-text, #8e8e8e);
+  color: #8b8fa3;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
 
@@ -95,7 +96,7 @@ export const PANEL_CSS = `
 #uninsta-boundary .picker-preview {
   flex: 1;
   font-size: 12px;
-  color: var(--ig-secondary-text, #8e8e8e);
+  color: #8b8fa3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -103,12 +104,17 @@ export const PANEL_CSS = `
 
 #uninsta-boundary input[type="datetime-local"] {
   width: 100%;
-  padding: 8px;
-  border: 1px solid var(--ig-elevated-separator, #dbdbdb);
+  padding: 8px 10px;
+  border: 1px solid #30305a;
   border-radius: 8px;
-  background: var(--ig-primary-background, #fff);
-  color: var(--ig-primary-text, #262626);
-  font-size: 14px;
+  background: #16162b;
+  color: #e4e6eb;
+  font-size: 13px;
+}
+
+#uninsta-boundary input[type="datetime-local"]:focus {
+  outline: none;
+  border-color: #C13584;
 }
 
 /* Controls */
@@ -116,31 +122,35 @@ export const PANEL_CSS = `
   display: flex;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--ig-elevated-separator, #dbdbdb);
+  background: #1a1a2e;
+  border-bottom: 1px solid #30305a;
 }
 
 #uninsta-controls button {
   flex: 1;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
 }
 
 #uninsta-controls button:hover {
-  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 #uninsta-controls button:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 #uninsta-btn-start {
-  background: #0095f6;
+  background: linear-gradient(135deg, #833AB4, #C13584, #E1306C);
   color: #fff;
 }
 
@@ -150,9 +160,13 @@ export const PANEL_CSS = `
 }
 
 #uninsta-btn-pick {
-  background: var(--ig-secondary-background, #fafafa);
-  color: var(--ig-primary-text, #262626);
-  border: 1px solid var(--ig-elevated-separator, #dbdbdb) !important;
+  background: #16162b;
+  color: #e4e6eb;
+  border: 1px solid #30305a !important;
+}
+
+#uninsta-btn-pick:hover {
+  border-color: #C13584 !important;
 }
 
 /* Log Area */
@@ -161,44 +175,51 @@ export const PANEL_CSS = `
   min-height: 120px;
   max-height: 300px;
   overflow-y: auto;
-  padding: 8px 12px;
+  padding: 10px 14px;
+  background: #0d0d1a;
   font-family: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 11px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
+
+#uninsta-log::-webkit-scrollbar { width: 6px; }
+#uninsta-log::-webkit-scrollbar-track { background: transparent; }
+#uninsta-log::-webkit-scrollbar-thumb { background: #30305a; border-radius: 3px; }
+#uninsta-log::-webkit-scrollbar-thumb:hover { background: #4a4a7a; }
 
 #uninsta-log .log-entry {
   margin-bottom: 2px;
 }
 
-#uninsta-log .log-success { color: #58c322; }
-#uninsta-log .log-error { color: #ed4956; }
-#uninsta-log .log-warn { color: #fdcb6e; }
-#uninsta-log .log-info { color: #0095f6; }
-#uninsta-log .log-debug { color: var(--ig-secondary-text, #8e8e8e); }
+#uninsta-log .log-success { color: #4ade80; }
+#uninsta-log .log-error { color: #f87171; }
+#uninsta-log .log-warn { color: #fbbf24; }
+#uninsta-log .log-info { color: #C13584; }
+#uninsta-log .log-debug { color: #6b7280; }
 
 /* Progress Footer */
 #uninsta-progress {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 10px 16px;
   font-size: 12px;
-  color: var(--ig-secondary-text, #8e8e8e);
-  border-top: 1px solid var(--ig-elevated-separator, #dbdbdb);
-  gap: 8px;
+  color: #8b8fa3;
+  background: #16162b;
+  border-top: 1px solid #30305a;
+  gap: 10px;
 }
 
 #uninsta-progress-bar {
   flex: 1;
   height: 4px;
-  background: var(--ig-elevated-separator, #dbdbdb);
+  background: #30305a;
   border-radius: 2px;
   overflow: hidden;
 }
 
 #uninsta-progress-bar-fill {
   height: 100%;
-  background: #0095f6;
+  background: linear-gradient(90deg, #833AB4, #C13584, #E1306C, #F77737);
   border-radius: 2px;
   transition: width 0.3s ease;
   width: 0%;
@@ -222,7 +243,7 @@ export const PANEL_CSS = `
 }
 
 #uninsta-trigger.active {
-  color: #ed4956;
+  color: #C13584;
 }
 
 /* Picker Mode Overlay */
@@ -233,15 +254,15 @@ export const PANEL_CSS = `
 
 .uninsta-pick-mode [role="row"]:hover,
 .uninsta-pick-mode [role="listitem"]:hover {
-  outline: 2px solid #0095f6;
+  outline: 2px solid #C13584;
   outline-offset: -2px;
   border-radius: 4px;
 }
 
 .uninsta-pick-highlight {
-  outline: 2px solid #0095f6 !important;
+  outline: 2px solid #C13584 !important;
   outline-offset: -2px;
   border-radius: 4px;
-  background: rgba(0, 149, 246, 0.05) !important;
+  background: rgba(193, 53, 132, 0.08) !important;
 }
 `;

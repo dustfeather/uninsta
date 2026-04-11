@@ -38,12 +38,6 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
   panel.id = 'uninsta-panel';
   panel.style.display = 'none';
 
-  // Detect dark mode
-  if (document.documentElement.classList.contains('dark') ||
-      getComputedStyle(document.body).backgroundColor === 'rgb(0, 0, 0)') {
-    panel.classList.add('dark');
-  }
-
   panel.innerHTML = `
     <div id="uninsta-header">
       <h3>unInsta</h3>
