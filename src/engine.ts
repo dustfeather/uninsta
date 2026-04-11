@@ -1,5 +1,6 @@
 import type { AuthCredentials, Boundary, EngineCallbacks, EngineState, IGMessage, IGThreadInfo } from './types';
 import { fetchThreadMessages, unsendMessage } from './api';
+import { storeMessages, getMessageCount, getNextMessage, removeMessage, clearMessages, saveCursor, loadCursor, clearCursor } from './storage';
 
 const BASE_DELETE_DELAY = 3500;
 const MAX_DELETE_DELAY = 15000;
@@ -52,86 +53,93 @@ export class UnsendEngine {
 
     const boundaryTimestamp = this.boundary?.timestamp ?? null;
     const boundaryMessageId = this.boundary?.messageId ?? null;
-    const storageKey = `uninsta_cursor_${this.threadInfo.threadFbid}`;
-
-    // ── Phase 1: Collect all messages ────────────────────────────────────
-    this.callbacks.onLog('Phase 1: Collecting messages...', 'info');
-
-    let cursor: string | null = null;
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        cursor = saved;
-        this.callbacks.onLog('Resuming from last saved position...', 'info');
-      }
-    } catch {}
-
-    const allMessages: IGMessage[] = [];
-    let reachedBoundary = false;
+    const threadFbid = this.threadInfo.threadFbid;
 
     try {
-      while (!reachedBoundary) {
+      // ── Phase 1: Collect all messages into IndexedDB ─────────────────
+      this.callbacks.onLog('Phase 1: Collecting messages...', 'info');
+
+      // Check if we have messages from a previous run
+      const existingCount = await getMessageCount(threadFbid);
+      if (existingCount > 0) {
+        this.callbacks.onLog(`Found ${existingCount} messages from previous run.`, 'info');
+        this.state.totalFound = existingCount;
+        this.callbacks.onProgress(this.state);
+      } else {
+        // Fetch all pages and store in IndexedDB
+        let cursor = await loadCursor(threadFbid);
+        if (cursor) {
+          this.callbacks.onLog('Resuming collection from last position...', 'info');
+        }
+
+        let reachedBoundary = false;
+
+        while (!reachedBoundary) {
+          if (this.abortFlag) {
+            this.callbacks.onLog('Stopped by user.', 'warn');
+            break;
+          }
+
+          this.state.currentPage++;
+          this.callbacks.onLog(`Fetching page ${this.state.currentPage}...`, 'debug');
+
+          const data = await fetchThreadMessages(threadFbid, cursor, this.auth);
+          const messages = data.messages;
+
+          if (!messages || messages.length === 0) {
+            this.callbacks.onLog('No more messages.', 'info');
+            break;
+          }
+
+          // Filter to own messages and apply boundaries
+          const ownMessages = messages.filter(
+            (msg) => String(msg.sender_id) === this.auth.userId,
+          );
+
+          const toStore: IGMessage[] = [];
+          for (const msg of ownMessages) {
+            if (boundaryMessageId && msg.message_id === boundaryMessageId) {
+              reachedBoundary = true;
+              break;
+            }
+            if (boundaryTimestamp != null && msg.timestamp_ms < boundaryTimestamp) {
+              reachedBoundary = true;
+              break;
+            }
+            toStore.push(msg);
+          }
+
+          if (toStore.length > 0) {
+            await storeMessages(threadFbid, toStore);
+            this.state.totalFound += toStore.length;
+            this.callbacks.onProgress(this.state);
+          }
+
+          // Check for more pages
+          if (!data.pageInfo.has_previous_page && !data.pageInfo.end_cursor) break;
+          cursor = data.pageInfo.end_cursor;
+          if (!cursor) break;
+
+          await saveCursor(threadFbid, cursor);
+          await wait(FETCH_DELAY);
+        }
+
         if (this.abortFlag) {
-          this.callbacks.onLog('Stopped by user.', 'warn');
-          break;
+          this.state.running = false;
+          this.callbacks.onComplete(this.state);
+          return;
         }
 
-        this.state.currentPage++;
-        this.callbacks.onLog(`Fetching page ${this.state.currentPage}...`, 'debug');
-
-        const data = await fetchThreadMessages(this.threadInfo.threadFbid, cursor, this.auth);
-        const messages = data.messages;
-
-        if (!messages || messages.length === 0) {
-          this.callbacks.onLog('No more messages found.', 'info');
-          break;
-        }
-
-        // Filter to own messages
-        const ownMessages = messages.filter(
-          (msg) => String(msg.sender_id) === this.auth.userId,
-        );
-
-        for (const msg of ownMessages) {
-          // Check boundary by message ID
-          if (boundaryMessageId && msg.message_id === boundaryMessageId) {
-            reachedBoundary = true;
-            break;
-          }
-          // Check boundary by timestamp (messages come newest-first)
-          if (boundaryTimestamp != null && msg.timestamp_ms < boundaryTimestamp) {
-            reachedBoundary = true;
-            break;
-          }
-          allMessages.push(msg);
-        }
-
-        // Check if there are more pages
-        if (!data.pageInfo.has_previous_page && !data.pageInfo.end_cursor) {
-          break;
-        }
-
-        cursor = data.pageInfo.end_cursor;
-        if (!cursor) break;
-
-        // Save cursor for resume
-        try { localStorage.setItem(storageKey, cursor); } catch {}
-
-        await wait(FETCH_DELAY);
+        // Update total from DB (in case of resume)
+        this.state.totalFound = await getMessageCount(threadFbid);
       }
 
-      if (this.abortFlag) {
-        this.state.running = false;
-        this.callbacks.onComplete(this.state);
-        return;
-      }
-
-      // ── Phase 2: Unsend all collected messages ──────────────────────────
-      this.state.totalFound = allMessages.length;
-      this.callbacks.onLog(`Phase 2: Unsending ${allMessages.length} messages...`, 'info');
+      // ── Phase 2: Unsend from IndexedDB one by one ────────────────────
+      this.callbacks.onLog(`Phase 2: Unsending ${this.state.totalFound} messages...`, 'info');
       this.callbacks.onProgress(this.state);
 
-      for (const msg of allMessages) {
+      let msg: IGMessage | null;
+      while ((msg = await getNextMessage(threadFbid)) !== null) {
         if (this.abortFlag) {
           this.callbacks.onLog('Stopped by user.', 'warn');
           break;
@@ -147,12 +155,14 @@ export class UnsendEngine {
 
         if (success) {
           this.state.unsentCount++;
+          await removeMessage(msg.message_id);
           this.callbacks.onLog(
             `[${count}/${this.state.totalFound}] ${dateStr} ${preview} - OK`,
             'success',
           );
         } else {
           this.state.failedCount++;
+          await removeMessage(msg.message_id);
           this.failedMessages.push({ message_id: msg.message_id, timestamp_ms: msg.timestamp_ms, preview });
           this.callbacks.onLog(
             `[${count}/${this.state.totalFound}] ${dateStr} ${preview} - FAILED`,
@@ -183,9 +193,10 @@ export class UnsendEngine {
       }
     }
 
-    // Clear saved cursor if we finished naturally (not stopped/errored)
+    // Clean up if finished naturally
     if (!this.abortFlag) {
-      try { localStorage.removeItem(storageKey); } catch {}
+      await clearMessages(threadFbid);
+      await clearCursor(threadFbid);
     }
 
     this.state.running = false;
