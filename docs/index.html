@@ -1,318 +1,386 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>unInsta - Bulk Unsend Instagram DM Messages</title>
-  <meta name="description" content="Browser extension to bulk unsend your messages in Instagram DM conversations. Available for Chrome, Edge, Firefox, and as a Tampermonkey userscript.">
-  <style>
-    :root {
-      --bg: #0d0d1a;
-      --surface: #1a1a2e;
-      --border: #30305a;
-      --text: #e4e6eb;
-      --text-muted: #8b8fa3;
-      --gradient: linear-gradient(135deg, #833AB4 0%, #C13584 40%, #E1306C 70%, #F77737 100%);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>unInsta - Bulk Unsend Instagram DM Messages</title>
+    <meta name="description" content="Browser extension to bulk unsend your messages in Instagram DM conversations. Available for Chrome, Edge, Firefox, and as a Tampermonkey userscript.">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0b0e17;
+            --surface: #141825;
+            --surface-2: #1c2133;
+            --border: #2a3045;
+            --text: #e2e8f0;
+            --text-muted: #8892a8;
+            --accent: #C13584;
+            --accent-glow: rgba(193, 53, 132, 0.25);
+            --gradient: linear-gradient(135deg, #833AB4 0%, #C13584 40%, #E1306C 70%, #F77737 100%);
+        }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
 
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
 
-    /* Hero */
-    .hero {
-      text-align: center;
-      padding: 80px 0 60px;
-    }
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 5rem 1.5rem 3rem;
+            background: radial-gradient(ellipse at 50% 0%, var(--accent-glow) 0%, transparent 60%);
+        }
 
-    .hero img {
-      width: 96px;
-      height: 96px;
-      margin-bottom: 24px;
-    }
+        .hero-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 40px var(--accent-glow);
+        }
 
-    .hero h1 {
-      font-size: 48px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      background: var(--gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-    .hero p {
-      font-size: 20px;
-      color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto 40px;
-    }
+        .hero p {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 520px;
+            margin: 0 auto 2rem;
+        }
 
-    .buttons {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
 
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 28px;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
 
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
+        .btn:hover { text-decoration: none; transform: translateY(-1px); }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 20px var(--accent-glow); }
+        .btn-primary:hover { box-shadow: 0 6px 30px var(--accent-glow); }
+        .btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
 
-    .btn-primary {
-      background: var(--gradient);
-      color: #fff;
-    }
+        .btn svg { width: 18px; height: 18px; fill: currentColor; }
 
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
+        /* Screenshots */
+        .screenshot-wrap {
+            text-align: center;
+            padding: 0 1.5rem 4rem;
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
 
-    /* Screenshots */
-    .screenshots {
-      padding: 40px 0 60px;
-      display: flex;
-      gap: 24px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
+        .screenshot {
+            max-width: 380px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
 
-    .screenshots img {
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-      max-width: 440px;
-      width: 100%;
-      height: auto;
-      object-fit: contain;
-      align-self: flex-start;
-    }
+        /* Sections */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
 
-    /* Features */
-    .features {
-      padding: 60px 0;
-    }
+        section { padding: 3rem 0; }
 
-    .features h2 {
-      text-align: center;
-      font-size: 32px;
-      margin-bottom: 48px;
-    }
+        section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.01em;
+        }
 
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-    }
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+        }
 
-    .feature {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-    }
+        .feature {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
 
-    .feature h3 {
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
 
-    .feature p {
-      color: var(--text-muted);
-      font-size: 14px;
-    }
+        .feature h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
 
-    /* Install */
-    .install {
-      padding: 60px 0;
-    }
+        .feature p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
 
-    .install h2 {
-      text-align: center;
-      font-size: 32px;
-      margin-bottom: 48px;
-    }
+        /* Steps */
+        .steps {
+            counter-reset: step;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
 
-    .install-options {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-    }
+        .steps li {
+            counter-increment: step;
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            font-size: 1rem;
+        }
 
-    .install-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 32px 24px;
-      text-align: center;
-    }
+        .steps li::before {
+            content: counter(step);
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
 
-    .install-card h3 {
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
+        /* Install */
+        .install-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.25rem;
+        }
 
-    .install-card p {
-      color: var(--text-muted);
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
+        @media (max-width: 650px) { .install-grid { grid-template-columns: 1fr; } }
 
-    .install-card .btn {
-      width: 100%;
-      justify-content: center;
-    }
+        .install-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
 
-    /* Privacy */
-    .privacy {
-      padding: 60px 0;
-      text-align: center;
-    }
+        .install-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
 
-    .privacy h2 {
-      font-size: 32px;
-      margin-bottom: 16px;
-    }
+        .install-card p, .install-card ol {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
 
-    .privacy p {
-      color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto 24px;
-    }
+        .install-card ol {
+            padding-left: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
 
-    /* Footer */
-    footer {
-      padding: 40px 0;
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 14px;
-      border-top: 1px solid var(--border);
-    }
+        .install-card code {
+            background: var(--bg);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
 
-    footer a {
-      color: var(--text-muted);
-      text-decoration: none;
-    }
+        /* Privacy */
+        .privacy-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
 
-    footer a:hover {
-      color: var(--text);
-    }
-  </style>
+        .privacy-box p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+
+        footer a { color: var(--text-muted); }
+        footer a:hover { color: var(--text); }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-
-    <section class="hero">
-      <img src="https://raw.githubusercontent.com/dustfeather/uninsta/main/extension/icons/icon128.png" alt="unInsta">
-      <h1>unInsta</h1>
-      <p>Bulk unsend your messages in Instagram DM conversations. One click, all gone.</p>
-      <div class="buttons">
-        <a href="https://github.com/dustfeather/uninsta/releases/latest" class="btn btn-primary">Download Latest Release</a>
-        <a href="https://github.com/dustfeather/uninsta" class="btn btn-secondary">View on GitHub</a>
-      </div>
-    </section>
-
-    <section class="screenshots">
-      <img src="https://raw.githubusercontent.com/dustfeather/uninsta/main/docs/screenshots/simple-cropped.png" alt="unInsta panel">
-      <img src="https://raw.githubusercontent.com/dustfeather/uninsta/main/docs/screenshots/expanded-cropped.png" alt="unInsta in action">
-    </section>
-
-    <section class="features">
-      <h2>Features</h2>
-      <div class="feature-grid">
-        <div class="feature">
-          <h3>Bulk Unsend</h3>
-          <p>Unsend all your messages in any DM conversation with a single click. Works with text, media, links, and shared content.</p>
-        </div>
-        <div class="feature">
-          <h3>Date Boundary</h3>
-          <p>Set a date boundary to only unsend messages newer than a specific date. Keep your older messages intact.</p>
-        </div>
-        <div class="feature">
-          <h3>Smart Rate Limiting</h3>
-          <p>Built-in delays with jitter and automatic backoff on rate limits. Stays within Instagram's limits so you don't get flagged.</p>
-        </div>
-        <div class="feature">
-          <h3>Resume Support</h3>
-          <p>Stop and restart without losing progress. Messages are stored in IndexedDB and the cursor is saved for seamless resume.</p>
-        </div>
-        <div class="feature">
-          <h3>Real-time Progress</h3>
-          <p>Watch every message being unsent in the live log with timestamps. Progress bar with elapsed and remaining time estimates.</p>
-        </div>
-        <div class="feature">
-          <h3>Background Operation</h3>
-          <p>Start unsending and browse Instagram freely. The process continues in the background while you navigate.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="install">
-      <h2>Install</h2>
-      <div class="install-options">
-        <div class="install-card">
-          <h3>Chrome / Edge</h3>
-          <p>Download the extension zip, unzip, and load as an unpacked extension in developer mode.</p>
-          <a href="https://github.com/dustfeather/uninsta/releases/latest" class="btn btn-primary">Download Extension</a>
-        </div>
-        <div class="install-card">
-          <h3>Firefox</h3>
-          <p>Download the extension zip and load as a temporary add-on from about:debugging.</p>
-          <a href="https://github.com/dustfeather/uninsta/releases/latest" class="btn btn-primary">Download Extension</a>
-        </div>
-        <div class="install-card">
-          <h3>Tampermonkey</h3>
-          <p>For power users. Download the userscript and import it into Tampermonkey.</p>
-          <a href="https://github.com/dustfeather/uninsta/releases/latest" class="btn btn-secondary">Download Userscript</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="privacy">
-      <h2>Privacy First</h2>
-      <p>unInsta runs entirely in your browser. No data is collected, transmitted, or stored externally. No analytics. No tracking. No servers. Fully open source.</p>
-      <a href="https://github.com/dustfeather/uninsta/blob/main/PRIVACY.md" class="btn btn-secondary">Read Privacy Policy</a>
-    </section>
-
-  </div>
-
-  <footer>
-    <div class="container">
-      <p>
-        <a href="https://github.com/dustfeather/uninsta">GitHub</a> &middot;
-        <a href="https://github.com/dustfeather/uninsta/blob/main/LICENSE">GPL-3.0 License</a> &middot;
-        Inspired by <a href="https://github.com/victornpb/undiscord">Undiscord</a> &middot;
-        Maintained by <a href="https://github.com/dustfeather">dustfeather</a>
-      </p>
+<section class="hero">
+    <img src="https://raw.githubusercontent.com/dustfeather/uninsta/main/extension/icons/icon128.png" alt="unInsta" class="hero-icon">
+    <h1>unInsta</h1>
+    <p>Bulk unsend your messages in Instagram DM conversations. One click, all gone.</p>
+    <div class="hero-buttons">
+        <a href="https://github.com/dustfeather/uninsta/releases/latest" class="btn btn-primary">
+            <svg viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14ZM7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06l1.97 1.969Z"/></svg>
+            Download
+        </a>
+        <a href="https://github.com/dustfeather/uninsta" class="btn btn-secondary">
+            <svg viewBox="0 0 16 16"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+            Source
+        </a>
     </div>
-  </footer>
+</section>
+
+<div class="screenshot-wrap">
+    <img src="https://raw.githubusercontent.com/dustfeather/uninsta/main/docs/screenshots/simple-cropped.png" alt="unInsta panel" class="screenshot">
+    <img src="https://raw.githubusercontent.com/dustfeather/uninsta/main/docs/screenshots/expanded-cropped.png" alt="unInsta expanded" class="screenshot">
+</div>
+
+<div class="container">
+
+    <section>
+        <h2>Features</h2>
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">&#128465;</div>
+                <h3>Bulk Unsend</h3>
+                <p>Unsend all your messages in any DM conversation with a single click. Works with text, media, links, and shared content.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">&#128197;</div>
+                <h3>Date Boundary</h3>
+                <p>Set a date boundary to only unsend messages newer than a specific date. Keep your older messages intact.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">&#9889;</div>
+                <h3>Smart Rate Limiting</h3>
+                <p>Built-in delays with jitter and automatic backoff on rate limits. Stays within Instagram's limits so you don't get flagged.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">&#128260;</div>
+                <h3>Resume Support</h3>
+                <p>Stop and restart without losing progress. Messages are stored in IndexedDB and the cursor is saved for seamless resume.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">&#128202;</div>
+                <h3>Real-time Progress</h3>
+                <p>Watch every message being unsent in the live log with timestamps. Progress bar with elapsed and remaining time estimates.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">&#128736;</div>
+                <h3>Background Operation</h3>
+                <p>Start unsending and browse Instagram freely. The process continues in the background while you navigate.</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>How it works</h2>
+        <ol class="steps">
+            <li>Open an Instagram DM conversation in your browser</li>
+            <li>Click the unInsta panel and hit Start</li>
+            <li>Messages are scrolled through, collected, and unsent one by one</li>
+            <li>Browse freely while it runs in the background</li>
+        </ol>
+    </section>
+
+    <section>
+        <h2>Install</h2>
+        <div class="install-grid">
+            <div class="install-card">
+                <h3>Chrome / Edge</h3>
+                <ol>
+                    <li>Download the <code>.zip</code> from <a href="https://github.com/dustfeather/uninsta/releases/latest">Releases</a></li>
+                    <li>Go to <code>chrome://extensions</code></li>
+                    <li>Enable Developer Mode</li>
+                    <li>Drag &amp; drop the zip file</li>
+                </ol>
+            </div>
+            <div class="install-card">
+                <h3>Firefox</h3>
+                <ol>
+                    <li>Download the <code>.zip</code> from <a href="https://github.com/dustfeather/uninsta/releases/latest">Releases</a></li>
+                    <li>Go to <code>about:debugging</code></li>
+                    <li>Click "Load Temporary Add-on"</li>
+                    <li>Select the zip file</li>
+                </ol>
+            </div>
+            <div class="install-card">
+                <h3>Tampermonkey</h3>
+                <ol>
+                    <li>Download the <code>.user.js</code> from <a href="https://github.com/dustfeather/uninsta/releases/latest">Releases</a></li>
+                    <li>Open Tampermonkey dashboard</li>
+                    <li>Go to Utilities tab</li>
+                    <li>Import the userscript file</li>
+                </ol>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Privacy</h2>
+        <div class="privacy-box">
+            <p>unInsta runs entirely in your browser. No data is collected, transmitted, or stored externally. No analytics. No tracking. No servers. Fully <a href="https://github.com/dustfeather/uninsta">open source</a>.</p>
+        </div>
+    </section>
+
+</div>
+
+<footer>
+    <a href="https://github.com/dustfeather/uninsta">GitHub</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://github.com/dustfeather/uninsta/releases/latest">Releases</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://github.com/dustfeather/uninsta/blob/main/PRIVACY.md">Privacy Policy</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://github.com/dustfeather/uninsta/blob/main/LICENSE">GPL-3.0</a>
+    <br style="margin-top: 0.75rem;">
+    Inspired by <a href="https://github.com/victornpb/undiscord">Undiscord</a>
+    &nbsp;&middot;&nbsp;
+    Maintained by <a href="https://github.com/dustfeather">dustfeather</a>
+</footer>
 
 </body>
 </html>
