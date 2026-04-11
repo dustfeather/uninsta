@@ -7,9 +7,9 @@
 <p align="center">Bulk unsend your messages in Instagram DM conversations.</p>
 
 <p align="center">
-  <img src="docs/screenshots/simple.png" alt="unInsta panel" width="45%">
+  <img src="docs/screenshots/simple-cropped.png" alt="unInsta panel" width="45%">
   &nbsp;
-  <img src="docs/screenshots/expanded.png" alt="unInsta in action" width="45%">
+  <img src="docs/screenshots/expanded-cropped.png" alt="unInsta in action" width="45%">
 </p>
 
 unInsta uses Instagram's internal API to iterate through all your messages in a conversation and unsend them one by one, with built-in rate limiting to avoid triggering Instagram's abuse detection.
