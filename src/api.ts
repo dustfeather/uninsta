@@ -18,9 +18,13 @@ export async function fetchThreadMessages(
   cursor: string | null,
   auth: AuthCredentials,
 ): Promise<IGThreadResponse> {
-  const url = cursor
-    ? `https://www.instagram.com/api/v1/direct_v2/threads/${threadId}/?cursor=${encodeURIComponent(cursor)}`
-    : `https://www.instagram.com/api/v1/direct_v2/threads/${threadId}/`;
+  const params = new URLSearchParams({
+    visual_message_return_type: 'unseen',
+    direction: 'older',
+    limit: '20',
+  });
+  if (cursor) params.set('cursor', cursor);
+  const url = `https://www.instagram.com/api/v1/direct_v2/threads/${threadId}/?${params}`;
 
   const resp = await fetch(url, {
     method: 'GET',
