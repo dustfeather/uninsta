@@ -47,6 +47,15 @@ jobs:
         env:
           UNINSTA_VERSION: ${{ steps.version.outputs.version }}
 
+      - name: Generate release notes
+        run: |
+          PREV_TAG=$(git tag --list 'v*' --sort=-version:refname | head -n1)
+          if [ -n "$PREV_TAG" ]; then
+            git log "${PREV_TAG}..HEAD" --pretty=format:"- %s" > dist/release-notes.txt
+          else
+            echo "- Initial release" > dist/release-notes.txt
+          fi
+
       - name: Create source zip for AMO review
         run: git archive --format=zip --prefix=uninsta-source/ HEAD -o dist/uninsta-source.zip
 
@@ -134,10 +143,6 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v4
         with:
           name: dist
@@ -146,19 +151,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-
-      - name: Generate release notes
-        id: notes
-        run: |
-          PREV_TAG=$(git tag --list 'v*' --sort=-version:refname | head -n2 | tail -1)
-          if [ -z "$PREV_TAG" ]; then
-            NOTES=$(git log --format="- %s" -10)
-          else
-            NOTES=$(git log --format="- %s" "$PREV_TAG"..HEAD)
-          fi
-          echo "notes<<NOTES_EOF" >> "$GITHUB_OUTPUT"
-          echo "$NOTES" >> "$GITHUB_OUTPUT"
-          echo "NOTES_EOF" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Mozilla Add-ons
         env:
@@ -184,7 +176,6 @@ jobs:
 
           AMO_BASE="https://addons.mozilla.org/api/v5"
           ADDON_ID="uninsta@dustfeather"
-          VERSION="${{ needs.build-and-release.outputs.version }}"
 
           # Upload .xpi
           JWT=$(generate_jwt)
@@ -233,19 +224,31 @@ jobs:
             exit 1
           fi
 
-          # Create new version with source code and release notes
-          JWT=$(generate_jwt)
-          RELEASE_NOTES=$(echo '${{ steps.notes.outputs.notes }}' | jq -Rs '{"en-US": .}')
-          VERSION_RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -H "Authorization: JWT $JWT" \
-            -F "upload=$UPLOAD_UUID" \
-            -F "source=@dist/uninsta-source.zip" \
-            -F "release_notes=$RELEASE_NOTES" \
-            "$AMO_BASE/addons/addon/$ADDON_ID/versions/")
+          # Create new version with source code and release notes (retry on 429)
+          NOTES=$(cat dist/release-notes.txt)
+          RELEASE_NOTES=$(jq -n --arg notes "$NOTES" '{"en-US": $notes}')
 
-          HTTP_CODE=$(echo "$VERSION_RESPONSE" | tail -1)
-          BODY=$(echo "$VERSION_RESPONSE" | sed '$d')
-          echo "Version create ($HTTP_CODE): $BODY"
+          for attempt in 1 2 3; do
+            JWT=$(generate_jwt)
+            VERSION_RESPONSE=$(curl -s -w "\n%{http_code}" \
+              -H "Authorization: JWT $JWT" \
+              -F "upload=$UPLOAD_UUID" \
+              -F "source=@dist/uninsta-source.zip" \
+              -F "release_notes=$RELEASE_NOTES" \
+              "$AMO_BASE/addons/addon/$ADDON_ID/versions/")
+
+            HTTP_CODE=$(echo "$VERSION_RESPONSE" | tail -1)
+            BODY=$(echo "$VERSION_RESPONSE" | sed '$d')
+            echo "Version create attempt $attempt ($HTTP_CODE): $BODY"
+
+            if [ "$HTTP_CODE" = "429" ]; then
+              WAIT=$(echo "$BODY" | jq -r '.detail' | grep -oP '\d+' || echo "60")
+              echo "Rate limited, waiting ${WAIT}s..."
+              sleep "$WAIT"
+              continue
+            fi
+            break
+          done
 
           if [ "$HTTP_CODE" != "201" ] && [ "$HTTP_CODE" != "200" ]; then
             if echo "$BODY" | grep -q "in review"; then
