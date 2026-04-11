@@ -69,6 +69,14 @@ unInsta runs as a content script on `instagram.com/direct/*`. On load, it interc
 
 ## Building from Source
 
+### Requirements
+
+- **OS:** Any (Linux, macOS, Windows)
+- **Node.js:** v22 or later ([download](https://nodejs.org/))
+- **npm:** Included with Node.js (v10+)
+
+### Steps
+
 ```bash
 git clone https://github.com/dustfeather/uninsta.git
 cd uninsta
@@ -76,9 +84,13 @@ npm install
 npm run build
 ```
 
-Outputs:
+`npm run build` runs TypeScript type-checking (`tsc --noEmit`) then executes the build script (`tsx scripts/build.ts`), which uses esbuild to bundle and minify each entry point.
+
+### Output
+
+- `dist/uninsta-extension.zip` -- Chrome/Edge extension
+- `dist/uninsta-extension.xpi` -- Firefox extension
 - `dist/uninsta.user.js` -- Tampermonkey userscript
-- `dist/uninsta-extension.zip` -- Browser extension
 - `dist/extension/` -- Unpacked extension directory
 
 ## Acknowledgements

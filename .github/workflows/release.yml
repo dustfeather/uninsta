@@ -134,6 +134,10 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v4
         with:
           name: dist
@@ -142,6 +146,19 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          PREV_TAG=$(git tag --list 'v*' --sort=-version:refname | head -n2 | tail -1)
+          if [ -z "$PREV_TAG" ]; then
+            NOTES=$(git log --format="- %s" -10)
+          else
+            NOTES=$(git log --format="- %s" "$PREV_TAG"..HEAD)
+          fi
+          echo "notes<<NOTES_EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "NOTES_EOF" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Mozilla Add-ons
         env:
@@ -167,6 +184,7 @@ jobs:
 
           AMO_BASE="https://addons.mozilla.org/api/v5"
           ADDON_ID="uninsta@dustfeather"
+          VERSION="${{ needs.build-and-release.outputs.version }}"
 
           # Upload .xpi
           JWT=$(generate_jwt)
@@ -215,12 +233,14 @@ jobs:
             exit 1
           fi
 
-          # Create new version with source code for review
+          # Create new version with source code and release notes
           JWT=$(generate_jwt)
+          RELEASE_NOTES=$(echo '${{ steps.notes.outputs.notes }}' | jq -Rs '{"en-US": .}')
           VERSION_RESPONSE=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: JWT $JWT" \
             -F "upload=$UPLOAD_UUID" \
             -F "source=@dist/uninsta-source.zip" \
+            -F "release_notes=$RELEASE_NOTES" \
             "$AMO_BASE/addons/addon/$ADDON_ID/versions/")
 
           HTTP_CODE=$(echo "$VERSION_RESPONSE" | tail -1)
