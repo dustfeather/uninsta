@@ -149,8 +149,8 @@ function getBoundaryFromUI(elements: UIElements): Boundary | null {
 
   const datetimeValue = elements.datetimeInput.value;
   if (datetimeValue) {
-    // Convert to microseconds (Instagram uses microsecond timestamps)
-    boundary.timestamp = new Date(datetimeValue).getTime() * 1000;
+    // Convert to milliseconds (Instagram GraphQL uses millisecond timestamps)
+    boundary.timestamp = new Date(datetimeValue).getTime();
   }
 
   if (!boundary.messageId && !boundary.timestamp) return null;

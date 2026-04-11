@@ -1,22 +1,24 @@
-/** A single message item from Instagram's thread API response. */
+/** A single message node from Instagram's GraphQL thread response. */
 export interface IGMessage {
-  item_id: string;
-  user_id: number;
-  timestamp: number; // microseconds
-  item_type: string; // "text", "media", "link", "raven_media", etc.
-  text?: string;
+  message_id: string; // "REDACTED_MESSAGE_ID"
+  sender_id: string;
+  timestamp_ms: number; // milliseconds
+  message?: { text?: string };
+  __typename?: string;
 }
 
-/** Response shape from GET /api/v1/direct_v2/threads/{threadId}/ */
-export interface IGThreadResponse {
-  thread: {
-    thread_id: string;
-    thread_title: string;
-    items: IGMessage[];
-    oldest_cursor: string;
-    has_older: boolean;
-  };
-  status: string;
+/** Pagination info from GraphQL Relay response. */
+export interface IGPageInfo {
+  has_previous_page: boolean;
+  start_cursor: string | null;
+  end_cursor: string | null;
+  has_next_page: boolean;
+}
+
+/** Thread info extracted from page state. */
+export interface IGThreadInfo {
+  threadFbid: string; // "REDACTED_THREAD_FBID" - used in GraphQL queries
+  threadId: string; // "340282366841710301..." - used in unsend mutation
 }
 
 /** Collected auth credentials needed for API requests. */
@@ -25,6 +27,8 @@ export interface AuthCredentials {
   userId: string;
   appId: string;
   wwwClaim: string;
+  fbDtsg: string;
+  lsd: string;
 }
 
 /** Tracks progress of the unsend loop. */
@@ -46,8 +50,8 @@ export interface EngineCallbacks {
 
 /** Boundary configuration for limiting which messages to unsend. */
 export interface Boundary {
-  /** Message item_id to stop before (from click-to-pick). */
+  /** Message message_id to stop before (from click-to-pick). */
   messageId?: string;
-  /** Timestamp in microseconds to stop before (from datetime input). */
+  /** Timestamp in milliseconds to stop before (from datetime input). */
   timestamp?: number;
 }

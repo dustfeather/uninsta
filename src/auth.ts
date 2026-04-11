@@ -1,12 +1,63 @@
-import type { AuthCredentials } from './types';
+import type { AuthCredentials, IGThreadInfo } from './types';
 import { getAppId } from './interceptor';
 
 /**
  * Extract a named value from document.cookie.
  */
-function getCookie(name: string): string | null {
+export function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Extract fb_dtsg token from the page.
+ * This is embedded in Instagram's HTML/JS and is required for GraphQL requests.
+ */
+function getFbDtsg(): string | null {
+  // Try to find it in script tags
+  const scripts = document.querySelectorAll('script:not([src])');
+  for (const script of scripts) {
+    const text = script.textContent || '';
+    // Pattern: "DTSGInitialData",[],{"token":"..."}
+    const match = text.match(/["']token["']\s*:\s*["'](NAf[^"']+)["']/);
+    if (match) return match[1];
+  }
+
+  // Try window.__eqmc (sometimes contains fb_dtsg)
+  try {
+    const eqmc = (window as any).__eqmc;
+    if (eqmc?.f) return eqmc.f;
+  } catch {}
+
+  // Try require('DTSGInitData')
+  try {
+    const requireFn = (window as any).require;
+    if (typeof requireFn === 'function') {
+      const dtsg = requireFn('DTSGInitData') || requireFn('DTSGInitialData');
+      if (dtsg?.token) return dtsg.token;
+    }
+  } catch {}
+
+  return null;
+}
+
+/**
+ * Extract the LSD token from the page.
+ */
+function getLsd(): string | null {
+  // Check meta tag
+  const meta = document.querySelector('meta[name="lsd"]');
+  if (meta) return meta.getAttribute('content');
+
+  // Check script tags
+  const scripts = document.querySelectorAll('script:not([src])');
+  for (const script of scripts) {
+    const text = script.textContent || '';
+    const match = text.match(/["']LSD["']\s*,\s*\[\]\s*,\s*\{["']token["']\s*:\s*["']([^"']+)["']/);
+    if (match) return match[1];
+  }
+
+  return null;
 }
 
 /**
@@ -21,15 +72,68 @@ export function getAuth(): { auth: AuthCredentials } | { auth: null; reason: str
   if (!userId) return { auth: null, reason: 'Not logged in. Please log in to Instagram.' };
 
   const appId = getAppId();
-  if (!appId) return { auth: null, reason: 'App ID not captured yet. Please refresh the page and try again.' };
+  if (!appId) return { auth: null, reason: 'App ID not captured yet. Click Retry or refresh the page.' };
 
   const wwwClaim = sessionStorage.getItem('www-claim-v2') || '0';
 
-  return { auth: { csrfToken, userId, appId, wwwClaim } };
+  const fbDtsg = getFbDtsg();
+  if (!fbDtsg) return { auth: null, reason: 'Could not find fb_dtsg token. Please refresh the page.' };
+
+  const lsd = getLsd();
+  if (!lsd) return { auth: null, reason: 'Could not find LSD token. Please refresh the page.' };
+
+  return { auth: { csrfToken, userId, appId, wwwClaim, fbDtsg, lsd } };
 }
 
 /**
- * Extract the thread ID from the current URL.
+ * Extract thread info from the page's React state.
+ * We need both threadFbid (for queries) and threadId (for mutations).
+ */
+export function getThreadInfo(): IGThreadInfo | null {
+  // Walk the React fiber tree from the main chat container to find thread data
+  const chatContainer = document.querySelector('[role="main"]') || document.querySelector('main');
+  if (!chatContainer) return null;
+
+  const fiberKey = Object.keys(chatContainer).find(k => k.startsWith('__reactFiber$'));
+  if (!fiberKey) return null;
+
+  let fiber = (chatContainer as any)[fiberKey];
+  let depth = 0;
+
+  while (fiber && depth < 30) {
+    const props = fiber.memoizedProps || fiber.pendingProps;
+    if (props) {
+      // Look for thread data in various prop shapes
+      const thread = props.thread || props.threadInfo || props.data?.thread;
+      if (thread) {
+        const fbid = thread.thread_id || thread.threadFbid || thread.id;
+        const tid = thread.thread_key || thread.thread_v2_id;
+        if (fbid) {
+          return {
+            threadFbid: String(fbid),
+            threadId: tid ? String(tid) : '',
+          };
+        }
+      }
+
+      // Check for threadId/threadFbid directly in props
+      if (props.threadFbid || props.thread_fbid) {
+        return {
+          threadFbid: String(props.threadFbid || props.thread_fbid),
+          threadId: props.threadId || props.thread_id || '',
+        };
+      }
+    }
+
+    fiber = fiber.return;
+    depth++;
+  }
+
+  return null;
+}
+
+/**
+ * Extract the thread URL ID from the current URL.
  * Expects a URL like: https://www.instagram.com/direct/t/THREAD_ID/
  * Returns null if not on a DM thread page.
  */
