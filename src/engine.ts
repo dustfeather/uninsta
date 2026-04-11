@@ -52,9 +52,11 @@ export class UnsendEngine {
 
     const boundaryTimestamp = this.boundary?.timestamp ?? null;
     const boundaryMessageId = this.boundary?.messageId ?? null;
-
-    // Resume from saved cursor if available
     const storageKey = `uninsta_cursor_${this.threadInfo.threadFbid}`;
+
+    // ── Phase 1: Collect all messages ────────────────────────────────────
+    this.callbacks.onLog('Phase 1: Collecting messages...', 'info');
+
     let cursor: string | null = null;
     try {
       const saved = localStorage.getItem(storageKey);
@@ -64,9 +66,8 @@ export class UnsendEngine {
       }
     } catch {}
 
+    const allMessages: IGMessage[] = [];
     let reachedBoundary = false;
-
-    this.callbacks.onLog('Starting unsend process...', 'info');
 
     try {
       while (!reachedBoundary) {
@@ -91,77 +92,79 @@ export class UnsendEngine {
           (msg) => String(msg.sender_id) === this.auth.userId,
         );
 
-        // Count this page's messages upfront so progress bar stays ahead
-        this.state.totalFound += ownMessages.length;
-        this.callbacks.onProgress(this.state);
-
         for (const msg of ownMessages) {
-          if (this.abortFlag) break;
-
           // Check boundary by message ID
           if (boundaryMessageId && msg.message_id === boundaryMessageId) {
-            // Adjust totalFound since we won't process remaining
-            this.state.totalFound -= ownMessages.length - ownMessages.indexOf(msg);
             reachedBoundary = true;
-            this.callbacks.onLog('Reached boundary message. Stopping.', 'info');
             break;
           }
-
           // Check boundary by timestamp (messages come newest-first)
           if (boundaryTimestamp != null && msg.timestamp_ms < boundaryTimestamp) {
-            this.state.totalFound -= ownMessages.length - ownMessages.indexOf(msg);
             reachedBoundary = true;
-            this.callbacks.onLog('Reached timestamp boundary. Stopping.', 'info');
             break;
           }
-
-          const preview = msg.message?.text
-            ? `"${msg.message.text.substring(0, 40)}${msg.message.text.length > 40 ? '...' : ''}"`
-            : '[SharedContent]';
-          const dateStr = msg.timestamp_ms ? new Date(msg.timestamp_ms).toISOString().replace('T', ' ').substring(0, 19) : '';
-          const count = this.state.unsentCount + this.state.failedCount + 1;
-
-          const success = await this.unsendWithRetry(msg);
-
-          if (success) {
-            this.state.unsentCount++;
-            this.callbacks.onLog(
-              `[${count}] ${dateStr} ${preview} - OK`,
-              'success',
-            );
-          } else {
-            this.state.failedCount++;
-            this.failedMessages.push({ message_id: msg.message_id, timestamp_ms: msg.timestamp_ms, preview });
-            this.callbacks.onLog(
-              `[${count}] ${dateStr} ${preview} - FAILED`,
-              'error',
-            );
-          }
-
-          this.callbacks.onProgress(this.state);
-
-          const delay = jitteredDelay(this.deleteDelay, DELETE_JITTER);
-          this.callbacks.onLog(`Waiting ${(delay / 1000).toFixed(1)}s...`, 'debug');
-          await wait(delay);
+          allMessages.push(msg);
         }
 
-        // Check if there are more pages (Relay pagination)
+        // Check if there are more pages
         if (!data.pageInfo.has_previous_page && !data.pageInfo.end_cursor) {
-          this.callbacks.onLog('Reached end of conversation.', 'info');
           break;
         }
 
         cursor = data.pageInfo.end_cursor;
-        if (!cursor) {
-          this.callbacks.onLog('No more pages.', 'info');
-          break;
-        }
+        if (!cursor) break;
 
         // Save cursor for resume
         try { localStorage.setItem(storageKey, cursor); } catch {}
 
-        // Delay between page fetches
         await wait(FETCH_DELAY);
+      }
+
+      if (this.abortFlag) {
+        this.state.running = false;
+        this.callbacks.onComplete(this.state);
+        return;
+      }
+
+      // ── Phase 2: Unsend all collected messages ──────────────────────────
+      this.state.totalFound = allMessages.length;
+      this.callbacks.onLog(`Phase 2: Unsending ${allMessages.length} messages...`, 'info');
+      this.callbacks.onProgress(this.state);
+
+      for (const msg of allMessages) {
+        if (this.abortFlag) {
+          this.callbacks.onLog('Stopped by user.', 'warn');
+          break;
+        }
+
+        const preview = msg.message?.text
+          ? `"${msg.message.text.substring(0, 40)}${msg.message.text.length > 40 ? '...' : ''}"`
+          : '[SharedContent]';
+        const dateStr = msg.timestamp_ms ? new Date(msg.timestamp_ms).toISOString().replace('T', ' ').substring(0, 19) : '';
+        const count = this.state.unsentCount + this.state.failedCount + 1;
+
+        const success = await this.unsendWithRetry(msg);
+
+        if (success) {
+          this.state.unsentCount++;
+          this.callbacks.onLog(
+            `[${count}/${this.state.totalFound}] ${dateStr} ${preview} - OK`,
+            'success',
+          );
+        } else {
+          this.state.failedCount++;
+          this.failedMessages.push({ message_id: msg.message_id, timestamp_ms: msg.timestamp_ms, preview });
+          this.callbacks.onLog(
+            `[${count}/${this.state.totalFound}] ${dateStr} ${preview} - FAILED`,
+            'error',
+          );
+        }
+
+        this.callbacks.onProgress(this.state);
+
+        const delay = jitteredDelay(this.deleteDelay, DELETE_JITTER);
+        this.callbacks.onLog(`Waiting ${(delay / 1000).toFixed(1)}s...`, 'debug');
+        await wait(delay);
       }
     } catch (err: any) {
       if (err.status === 401 || err.status === 403) {

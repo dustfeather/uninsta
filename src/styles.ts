@@ -230,6 +230,22 @@ export const PANEL_CSS = `
   gap: 10px;
 }
 
+#uninsta-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: #30305a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#uninsta-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #833AB4, #C13584, #E1306C, #F77737);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
 /* Trigger Button */
 #uninsta-trigger {
   background: none;

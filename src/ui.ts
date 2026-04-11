@@ -5,6 +5,7 @@ export interface UIElements {
   panel: HTMLDivElement;
   logArea: HTMLDivElement;
   progressText: HTMLSpanElement;
+  progressBarFill: HTMLDivElement;
   statusText: HTMLSpanElement;
   btnStart: HTMLButtonElement;
   btnStop: HTMLButtonElement;
@@ -71,6 +72,9 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
     <div id="uninsta-log"></div>
     <div id="uninsta-progress">
       <span id="uninsta-progress-text">Ready</span>
+      <div id="uninsta-progress-bar">
+        <div id="uninsta-progress-bar-fill"></div>
+      </div>
     </div>
   `;
 
@@ -81,6 +85,7 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
     panel,
     logArea: panel.querySelector('#uninsta-log')!,
     progressText: panel.querySelector('#uninsta-progress-text')!,
+    progressBarFill: panel.querySelector('#uninsta-progress-bar-fill')!,
     statusText: panel.querySelector('#uninsta-status-text')!,
     btnStart: panel.querySelector('#uninsta-btn-start')!,
     btnStop: panel.querySelector('#uninsta-btn-stop')!,
@@ -226,7 +231,11 @@ export function updateProgress(
   state: EngineState,
 ): void {
   const done = state.unsentCount + state.failedCount + state.skippedCount;
-  elements.progressText.textContent = `Unsent: ${state.unsentCount} | Failed: ${state.failedCount} | Skipped: ${state.skippedCount} | Page: ${state.currentPage}`;
+  const pct = state.totalFound > 0 ? Math.round((done / state.totalFound) * 100) : 0;
+  elements.progressText.textContent = state.totalFound > 0
+    ? `[${done}/${state.totalFound}] ${pct}%`
+    : `Collecting... (page ${state.currentPage})`;
+  elements.progressBarFill.style.width = `${pct}%`;
 }
 
 /**
