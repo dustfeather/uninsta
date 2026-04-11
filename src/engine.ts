@@ -80,11 +80,17 @@ export class UnsendEngine {
           (msg) => String(msg.sender_id) === this.auth.userId,
         );
 
+        // Count this page's messages upfront so progress bar stays ahead
+        this.state.totalFound += ownMessages.length;
+        this.callbacks.onProgress(this.state);
+
         for (const msg of ownMessages) {
           if (this.abortFlag) break;
 
           // Check boundary by message ID
           if (boundaryMessageId && msg.message_id === boundaryMessageId) {
+            // Adjust totalFound since we won't process remaining
+            this.state.totalFound -= ownMessages.length - ownMessages.indexOf(msg);
             reachedBoundary = true;
             this.callbacks.onLog('Reached boundary message. Stopping.', 'info');
             break;
@@ -92,12 +98,12 @@ export class UnsendEngine {
 
           // Check boundary by timestamp (messages come newest-first)
           if (boundaryTimestamp != null && msg.timestamp_ms < boundaryTimestamp) {
+            this.state.totalFound -= ownMessages.length - ownMessages.indexOf(msg);
             reachedBoundary = true;
             this.callbacks.onLog('Reached timestamp boundary. Stopping.', 'info');
             break;
           }
 
-          this.state.totalFound++;
           const preview = msg.message?.text
             ? `"${msg.message.text.substring(0, 40)}${msg.message.text.length > 40 ? '...' : ''}"`
             : `[${msg.__typename || 'media'}]`;
