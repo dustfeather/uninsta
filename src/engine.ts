@@ -53,11 +53,20 @@ export class UnsendEngine {
     const boundaryTimestamp = this.boundary?.timestamp ?? null;
     const boundaryMessageId = this.boundary?.messageId ?? null;
 
+    // Resume from saved cursor if available
+    const storageKey = `uninsta_cursor_${this.threadInfo.threadFbid}`;
     let cursor: string | null = null;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        cursor = saved;
+        this.callbacks.onLog('Resuming from last saved position...', 'info');
+      }
+    } catch {}
+
     let reachedBoundary = false;
 
     this.callbacks.onLog('Starting unsend process...', 'info');
-    this.callbacks.onLog(`Thread: ${this.threadInfo.threadFbid}`, 'debug');
 
     try {
       while (!reachedBoundary) {
@@ -148,6 +157,9 @@ export class UnsendEngine {
           break;
         }
 
+        // Save cursor for resume
+        try { localStorage.setItem(storageKey, cursor); } catch {}
+
         // Delay between page fetches
         await wait(FETCH_DELAY);
       }
@@ -166,6 +178,11 @@ export class UnsendEngine {
         const dateStr = fm.timestamp_ms ? new Date(fm.timestamp_ms).toISOString().replace('T', ' ').substring(0, 19) : 'unknown date';
         this.callbacks.onLog(`  ${dateStr} ${fm.preview} (${fm.message_id})`, 'error');
       }
+    }
+
+    // Clear saved cursor if we finished naturally (not stopped/errored)
+    if (!this.abortFlag) {
+      try { localStorage.removeItem(storageKey); } catch {}
     }
 
     this.state.running = false;
