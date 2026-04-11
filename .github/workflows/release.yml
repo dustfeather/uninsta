@@ -102,6 +102,12 @@ jobs:
 
           echo "Publish response ($HTTP_CODE): $BODY"
 
+          PUBLISH_STATUS=$(echo "$BODY" | jq -r '.status // empty')
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "Publish failed (may require manual review)"
+            if echo "$BODY" | grep -q "in review"; then
+              echo "::warning::Chrome Web Store publish skipped: item is still in review"
+            else
+              echo "Publish failed"
+              exit 1
+            fi
           fi
