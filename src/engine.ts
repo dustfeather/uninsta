@@ -27,6 +27,7 @@ export class UnsendEngine {
 
   private deleteDelay = BASE_DELETE_DELAY;
   private abortFlag = false;
+  private failedMessages: { message_id: string; timestamp_ms: number; preview: string }[] = [];
 
   constructor(
     private threadInfo: IGThreadInfo,
@@ -46,6 +47,7 @@ export class UnsendEngine {
       currentPage: 0,
     };
     this.deleteDelay = BASE_DELETE_DELAY;
+    this.failedMessages = [];
     this.callbacks.onProgress(this.state);
 
     const boundaryTimestamp = this.boundary?.timestamp ?? null;
@@ -120,6 +122,7 @@ export class UnsendEngine {
             );
           } else {
             this.state.failedCount++;
+            this.failedMessages.push({ message_id: msg.message_id, timestamp_ms: msg.timestamp_ms, preview });
             this.callbacks.onLog(
               `[${count}] ${dateStr} ${preview} - FAILED`,
               'error',
@@ -153,6 +156,15 @@ export class UnsendEngine {
         this.callbacks.onLog('Session expired. Please refresh and log in again.', 'error');
       } else {
         this.callbacks.onLog(`Unexpected error: ${err.message}`, 'error');
+      }
+    }
+
+    // Dump failed messages
+    if (this.failedMessages.length > 0) {
+      this.callbacks.onLog(`--- ${this.failedMessages.length} failed message(s) ---`, 'error');
+      for (const fm of this.failedMessages) {
+        const dateStr = fm.timestamp_ms ? new Date(fm.timestamp_ms).toLocaleString() : 'unknown date';
+        this.callbacks.onLog(`  ${dateStr} ${fm.preview} (${fm.message_id})`, 'error');
       }
     }
 
