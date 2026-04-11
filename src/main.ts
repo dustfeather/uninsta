@@ -58,10 +58,6 @@ import { enterPickMode } from './picker';
       log('Could not extract thread info from page. Try refreshing.', 'error');
       return;
     }
-    log(`Thread fbid: ${threadInfo.threadFbid}, id: ${threadInfo.threadId}`, 'debug');
-
-    // Clear log (keep the thread info line)
-    // uiElements.logArea.innerHTML = '';
 
     setRunningState(uiElements, true);
 
