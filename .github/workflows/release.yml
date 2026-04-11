@@ -11,6 +11,8 @@ permissions:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -45,6 +47,14 @@ jobs:
         env:
           UNINSTA_VERSION: ${{ steps.version.outputs.version }}
 
+      - name: Create source zip for AMO review
+        run: git archive --format=zip --prefix=uninsta-source/ HEAD -o dist/uninsta-source.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
       - name: Create tag and release
         uses: softprops/action-gh-release@v2
         with:
@@ -55,9 +65,19 @@ jobs:
             dist/uninsta-extension.xpi
           generate_release_notes: true
 
+  publish-chrome:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
       - name: Publish to Chrome Web Store
         run: |
-          # Get access token from refresh token
           TOKEN_RESPONSE=$(curl -s -X POST https://oauth2.googleapis.com/token \
             -d "client_id=${{ secrets.CHROME_CLIENT_ID }}" \
             -d "client_secret=${{ secrets.CHROME_CLIENT_SECRET }}" \
@@ -72,7 +92,6 @@ jobs:
             exit 1
           fi
 
-          # Upload the extension zip
           UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "x-goog-api-version: 2" \
@@ -82,15 +101,13 @@ jobs:
 
           HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -1)
           BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
-
-          echo "Upload response ($HTTP_CODE): $BODY"
+          echo "Upload ($HTTP_CODE): $BODY"
 
           if [ "$HTTP_CODE" != "200" ]; then
             echo "Upload failed"
             exit 1
           fi
 
-          # Publish the uploaded version
           PUBLISH_RESPONSE=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "x-goog-api-version: 2" \
@@ -100,15 +117,121 @@ jobs:
 
           HTTP_CODE=$(echo "$PUBLISH_RESPONSE" | tail -1)
           BODY=$(echo "$PUBLISH_RESPONSE" | sed '$d')
+          echo "Publish ($HTTP_CODE): $BODY"
 
-          echo "Publish response ($HTTP_CODE): $BODY"
-
-          PUBLISH_STATUS=$(echo "$BODY" | jq -r '.status // empty')
           if [ "$HTTP_CODE" != "200" ]; then
             if echo "$BODY" | grep -q "in review"; then
               echo "::warning::Chrome Web Store publish skipped: item is still in review"
             else
               echo "Publish failed"
+              exit 1
+            fi
+          fi
+
+  publish-amo:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Publish to Mozilla Add-ons
+        env:
+          AMO_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          generate_jwt() {
+            node -e "
+              const crypto = require('crypto');
+              const h = Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');
+              const now = Math.floor(Date.now()/1000);
+              const p = Buffer.from(JSON.stringify({
+                iss: process.env.AMO_API_KEY,
+                iat: now,
+                exp: now + 300,
+                jti: crypto.randomUUID()
+              })).toString('base64url');
+              const s = crypto.createHmac('sha256', process.env.AMO_API_SECRET)
+                .update(h+'.'+p).digest('base64url');
+              console.log(h+'.'+p+'.'+s);
+            "
+          }
+
+          AMO_BASE="https://addons.mozilla.org/api/v5"
+          ADDON_ID="uninsta@dustfeather"
+
+          # Upload .xpi
+          JWT=$(generate_jwt)
+          UPLOAD_RESPONSE=$(curl -s \
+            -H "Authorization: JWT $JWT" \
+            -F "upload=@dist/uninsta-extension.xpi" \
+            -F "channel=listed" \
+            "$AMO_BASE/addons/upload/")
+
+          UPLOAD_UUID=$(echo "$UPLOAD_RESPONSE" | jq -r '.uuid')
+          echo "Upload UUID: $UPLOAD_UUID"
+
+          if [ "$UPLOAD_UUID" = "null" ] || [ -z "$UPLOAD_UUID" ]; then
+            echo "Upload failed: $UPLOAD_RESPONSE"
+            exit 1
+          fi
+
+          # Poll for validation (max 10 minutes)
+          PROCESSED="false"
+          for i in $(seq 1 60); do
+            sleep 10
+            JWT=$(generate_jwt)
+
+            STATUS=$(curl -s \
+              -H "Authorization: JWT $JWT" \
+              "$AMO_BASE/addons/upload/$UPLOAD_UUID/")
+
+            PROCESSED=$(echo "$STATUS" | jq -r '.processed')
+            VALID=$(echo "$STATUS" | jq -r '.valid')
+            echo "Poll $i: processed=$PROCESSED valid=$VALID"
+
+            if [ "$PROCESSED" = "true" ]; then
+              if [ "$VALID" = "true" ]; then
+                echo "Validation passed"
+                break
+              else
+                echo "Validation failed:"
+                echo "$STATUS" | jq '.validation.messages'
+                exit 1
+              fi
+            fi
+          done
+
+          if [ "$PROCESSED" != "true" ]; then
+            echo "Validation timed out"
+            exit 1
+          fi
+
+          # Create new version with source code for review
+          JWT=$(generate_jwt)
+          VERSION_RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: JWT $JWT" \
+            -F "upload=$UPLOAD_UUID" \
+            -F "source=@dist/uninsta-source.zip" \
+            "$AMO_BASE/addons/addon/$ADDON_ID/versions/")
+
+          HTTP_CODE=$(echo "$VERSION_RESPONSE" | tail -1)
+          BODY=$(echo "$VERSION_RESPONSE" | sed '$d')
+          echo "Version create ($HTTP_CODE): $BODY"
+
+          if [ "$HTTP_CODE" != "201" ] && [ "$HTTP_CODE" != "200" ]; then
+            if echo "$BODY" | grep -q "in review"; then
+              echo "::warning::AMO publish skipped: previous version still in review"
+            else
+              echo "Version creation failed"
               exit 1
             fi
           fi
