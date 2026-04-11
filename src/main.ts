@@ -1,6 +1,6 @@
 import type { Boundary, EngineState } from './types';
 import { installInterceptor, getAppId, tryExtractAppIdFromPage } from './interceptor';
-import { getAuth, getThreadId, getThreadInfo, getCookie } from './auth';
+import { getAuth, getThreadId, getThreadInfo } from './auth';
 import { UnsendEngine } from './engine';
 import {
   injectStyles,
@@ -31,9 +31,8 @@ import { enterPickMode } from './picker';
 
   function refreshStatusInfo(): void {
     const threadId = getThreadId();
-    const userId = getCookie('ds_user_id');
     const appIdCaptured = getAppId() !== null;
-    updateStatusInfo(uiElements.panel, threadId, userId, appIdCaptured);
+    updateStatusInfo(uiElements.panel, threadId, appIdCaptured);
     const retryBtn = uiElements.panel.querySelector('#uninsta-btn-retry-appid');
     if (retryBtn) {
       retryBtn.classList.toggle('captured', appIdCaptured);

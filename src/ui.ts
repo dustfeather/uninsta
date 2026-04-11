@@ -49,7 +49,6 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
       </div>
       <div class="status-row">
         <span id="uninsta-status-thread">Thread: --</span>
-        <span id="uninsta-status-user">User: --</span>
       </div>
       <div class="status-row">
         <span id="uninsta-status-appid">App ID: Not captured</span>
@@ -231,19 +230,16 @@ export function updateProgress(
 }
 
 /**
- * Update the status info display with thread ID, user ID, and app ID state.
+ * Update the status info display with thread ID and app ID state.
  */
 export function updateStatusInfo(
   panel: HTMLDivElement,
   threadId: string | null,
-  userId: string | null,
   appIdCaptured: boolean,
 ): void {
   const threadEl = panel.querySelector('#uninsta-status-thread');
-  const userEl = panel.querySelector('#uninsta-status-user');
   const appIdEl = panel.querySelector('#uninsta-status-appid');
   if (threadEl) threadEl.textContent = `Thread: ${threadId ?? '--'}`;
-  if (userEl) userEl.textContent = `User: ${userId ?? '--'}`;
   if (appIdEl) appIdEl.textContent = `App ID: ${appIdCaptured ? 'Captured' : 'Not captured'}`;
 }
 
