@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: release
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -243,6 +247,10 @@ jobs:
 
             if [ "$HTTP_CODE" = "429" ]; then
               WAIT=$(echo "$BODY" | jq -r '.detail' | grep -oP '\d+' || echo "60")
+              if [ "$WAIT" -gt 300 ] 2>/dev/null; then
+                echo "::warning::Rate limit wait too long (${WAIT}s), giving up"
+                exit 1
+              fi
               echo "Rate limited, waiting ${WAIT}s..."
               sleep "$WAIT"
               continue
