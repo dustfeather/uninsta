@@ -7,7 +7,7 @@ import archiver from 'archiver';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'));
-const buildVersion = process.env.UNINSTA_VERSION || pkg.version;
+const buildVersion = process.env.UNINSTA_VERSION || pkg.version.replace(/-.*$/, '') || '0.0.0';
 
 function bundle(entryPoint: string): string {
   const result = buildSync({
