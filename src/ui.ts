@@ -226,15 +226,40 @@ export function appendLog(
 /**
  * Update the progress display.
  */
+let phaseStartTime = 0;
+
+function formatDuration(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+export function resetProgressTimer(): void {
+  phaseStartTime = Date.now();
+}
+
 export function updateProgress(
   elements: UIElements,
   state: EngineState,
 ): void {
   const done = state.unsentCount + state.failedCount + state.skippedCount;
   const pct = state.totalFound > 0 ? Math.round((done / state.totalFound) * 100) : 0;
-  elements.progressText.textContent = state.totalFound > 0
-    ? `[${done}/${state.totalFound}] ${pct}%`
-    : `Collecting... (page ${state.currentPage})`;
+
+  if (state.totalFound > 0 && done > 0) {
+    const elapsed = Date.now() - phaseStartTime;
+    const avgPerMsg = elapsed / done;
+    const remaining = (state.totalFound - done) * avgPerMsg;
+    elements.progressText.textContent = `[${done}/${state.totalFound}] ${pct}% | Elapsed: ${formatDuration(elapsed)} | Remaining: ~${formatDuration(remaining)}`;
+  } else if (state.totalFound > 0) {
+    elements.progressText.textContent = `[0/${state.totalFound}] 0%`;
+  } else {
+    elements.progressText.textContent = `Collecting... (page ${state.currentPage})`;
+  }
+
   elements.progressBarFill.style.width = `${pct}%`;
 }
 

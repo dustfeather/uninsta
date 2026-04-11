@@ -9,6 +9,7 @@ import {
   injectTriggerButton,
   appendLog,
   updateProgress,
+  resetProgressTimer,
   updateStatusInfo,
   setRunningState,
 } from './ui';
@@ -26,6 +27,7 @@ import { enterPickMode } from './picker';
   let pickModeCleanup: (() => void) | null = null;
 
   function log(message: string, level: 'info' | 'success' | 'warn' | 'error' | 'debug'): void {
+    if (message.startsWith('Phase 2:')) resetProgressTimer();
     appendLog(uiElements.logArea, message, level);
   }
 
