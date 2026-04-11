@@ -107,24 +107,21 @@ export class UnsendEngine {
           const preview = msg.message?.text
             ? `"${msg.message.text.substring(0, 40)}${msg.message.text.length > 40 ? '...' : ''}"`
             : `[${msg.__typename || 'media'}]`;
-
-          this.callbacks.onLog(
-            `[${this.state.unsentCount + this.state.failedCount + 1}] Unsending ${preview}`,
-            'debug',
-          );
+          const dateStr = msg.timestamp_ms ? new Date(msg.timestamp_ms).toLocaleString() : '';
+          const count = this.state.unsentCount + this.state.failedCount + 1;
 
           const success = await this.unsendWithRetry(msg);
 
           if (success) {
             this.state.unsentCount++;
             this.callbacks.onLog(
-              `[${this.state.unsentCount}] ${preview} - OK`,
+              `[${count}] ${dateStr} ${preview} - OK`,
               'success',
             );
           } else {
             this.state.failedCount++;
             this.callbacks.onLog(
-              `${preview} - FAILED after ${MAX_RETRIES} retries`,
+              `[${count}] ${dateStr} ${preview} - FAILED`,
               'error',
             );
           }

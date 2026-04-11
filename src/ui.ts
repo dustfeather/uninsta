@@ -5,7 +5,6 @@ export interface UIElements {
   panel: HTMLDivElement;
   logArea: HTMLDivElement;
   progressText: HTMLSpanElement;
-  progressBarFill: HTMLDivElement;
   statusText: HTMLSpanElement;
   btnStart: HTMLButtonElement;
   btnStop: HTMLButtonElement;
@@ -73,9 +72,6 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
     <div id="uninsta-log"></div>
     <div id="uninsta-progress">
       <span id="uninsta-progress-text">Ready</span>
-      <div id="uninsta-progress-bar">
-        <div id="uninsta-progress-bar-fill"></div>
-      </div>
     </div>
   `;
 
@@ -86,7 +82,6 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
     panel,
     logArea: panel.querySelector('#uninsta-log')!,
     progressText: panel.querySelector('#uninsta-progress-text')!,
-    progressBarFill: panel.querySelector('#uninsta-progress-bar-fill')!,
     statusText: panel.querySelector('#uninsta-status-text')!,
     btnStart: panel.querySelector('#uninsta-btn-start')!,
     btnStop: panel.querySelector('#uninsta-btn-stop')!,
@@ -227,29 +222,12 @@ export function appendLog(
 /**
  * Update the progress display.
  */
-let progressStartTime = 0;
-
 export function updateProgress(
   elements: UIElements,
   state: EngineState,
 ): void {
   const done = state.unsentCount + state.failedCount + state.skippedCount;
-  const pct = state.totalFound > 0 ? Math.round((done / state.totalFound) * 100) : 0;
-
-  // Track start time for ETA
-  if (done === 1) progressStartTime = Date.now();
-
-  let etaStr = '';
-  if (done > 1 && state.totalFound > done) {
-    const elapsed = Date.now() - progressStartTime;
-    const avgPerMsg = elapsed / (done - 1);
-    const remaining = (state.totalFound - done) * avgPerMsg;
-    const mins = Math.ceil(remaining / 60000);
-    etaStr = mins > 0 ? ` | ETA: ~${mins}min` : '';
-  }
-
-  elements.progressText.textContent = `[${done}/${state.totalFound}] ${pct}%${etaStr}`;
-  elements.progressBarFill.style.width = `${pct}%`;
+  elements.progressText.textContent = `Unsent: ${state.unsentCount} | Failed: ${state.failedCount} | Skipped: ${state.skippedCount} | Page: ${state.currentPage}`;
 }
 
 /**
