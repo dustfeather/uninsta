@@ -8,7 +8,7 @@ export function getViewerActorId(): string | null {
   const scripts = document.querySelectorAll('script:not([src])');
   for (const script of scripts) {
     const text = script.textContent || '';
-    // Look for "viewer_igid":"REDACTED_USER_ID" or actorID patterns
+    // Look for "viewer_igid":"XXXXX" or actorID patterns
     const match = text.match(/"viewer_igid"\s*:\s*"(\d+)"/);
     if (match) return match[1];
   }
@@ -117,7 +117,7 @@ export function getThreadInfo(): IGThreadInfo | null {
     const text = script.textContent || '';
 
     // Look for the PolarisDirectInboxRoot props pattern:
-    // "thread_igid":"REDACTED_THREAD_IGID","thread_fbid":"REDACTED_THREAD_FBID"
+    // Pattern: "thread_igid":"<long numeric>","thread_fbid":"<numeric>"
     const igidMatch = text.match(/"thread_igid"\s*:\s*"(\d{30,})"/);
     const fbidMatch = text.match(/"thread_fbid"\s*:\s*"(\d+)"/);
 
