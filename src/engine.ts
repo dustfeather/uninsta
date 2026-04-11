@@ -75,11 +75,7 @@ export class UnsendEngine {
           break;
         }
 
-        // Debug: log sender IDs to figure out which one is ours
-        const senderIds = [...new Set(messages.map(m => m.sender_id))];
-        this.callbacks.onLog(`Sender IDs in page: ${senderIds.join(', ')} (our userId: ${this.auth.userId})`, 'debug');
-
-        // Filter to own messages -- sender_fbid may match userId or viewer's actor ID
+        // Filter to own messages
         const ownMessages = messages.filter(
           (msg) => String(msg.sender_id) === this.auth.userId,
         );
