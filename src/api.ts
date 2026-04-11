@@ -85,8 +85,6 @@ export async function fetchThreadMessages(
   }
 
   const json = await resp.json();
-  console.log('[unInsta] GraphQL response:', JSON.stringify(json).substring(0, 1000));
-
   // Navigate the GraphQL response structure
   // Response: { data: { fetch__SlideThread: { as_ig_direct_thread: { slide_messages: { edges: [...], page_info: {...} } } } } }
   const slideThread = json?.data?.fetch__SlideThread?.as_ig_direct_thread;
