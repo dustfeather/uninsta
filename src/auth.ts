@@ -86,47 +86,26 @@ export function getAuth(): { auth: AuthCredentials } | { auth: null; reason: str
 }
 
 /**
- * Extract thread info from the page's React state.
- * We need both threadFbid (for queries) and threadId (for mutations).
+ * Extract thread info from the page's inline scripts.
+ * Instagram embeds thread_fbid and thread_igid in the PolarisDirectInboxRoot props.
  */
 export function getThreadInfo(): IGThreadInfo | null {
-  // Walk the React fiber tree from the main chat container to find thread data
-  const chatContainer = document.querySelector('[role="main"]') || document.querySelector('main');
-  if (!chatContainer) return null;
+  const scripts = document.querySelectorAll('script:not([src])');
 
-  const fiberKey = Object.keys(chatContainer).find(k => k.startsWith('__reactFiber$'));
-  if (!fiberKey) return null;
+  for (const script of scripts) {
+    const text = script.textContent || '';
 
-  let fiber = (chatContainer as any)[fiberKey];
-  let depth = 0;
+    // Look for the PolarisDirectInboxRoot props pattern:
+    // "thread_igid":"340282366841710301244260108997768417165","thread_fbid":"1933980191330189"
+    const igidMatch = text.match(/"thread_igid"\s*:\s*"(\d{30,})"/);
+    const fbidMatch = text.match(/"thread_fbid"\s*:\s*"(\d+)"/);
 
-  while (fiber && depth < 30) {
-    const props = fiber.memoizedProps || fiber.pendingProps;
-    if (props) {
-      // Look for thread data in various prop shapes
-      const thread = props.thread || props.threadInfo || props.data?.thread;
-      if (thread) {
-        const fbid = thread.thread_id || thread.threadFbid || thread.id;
-        const tid = thread.thread_key || thread.thread_v2_id;
-        if (fbid) {
-          return {
-            threadFbid: String(fbid),
-            threadId: tid ? String(tid) : '',
-          };
-        }
-      }
-
-      // Check for threadId/threadFbid directly in props
-      if (props.threadFbid || props.thread_fbid) {
-        return {
-          threadFbid: String(props.threadFbid || props.thread_fbid),
-          threadId: props.threadId || props.thread_id || '',
-        };
-      }
+    if (igidMatch && fbidMatch) {
+      return {
+        threadFbid: fbidMatch[1],
+        threadId: igidMatch[1],
+      };
     }
-
-    fiber = fiber.return;
-    depth++;
   }
 
   return null;
