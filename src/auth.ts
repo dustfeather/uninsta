@@ -1,4 +1,25 @@
 import type { AuthCredentials, IGThreadInfo } from './types';
+
+/**
+ * Extract the viewer's actor ID (av parameter) from page scripts.
+ * This is the viewer's IG-level ID used as sender_fbid in messages.
+ */
+export function getViewerActorId(): string | null {
+  const scripts = document.querySelectorAll('script:not([src])');
+  for (const script of scripts) {
+    const text = script.textContent || '';
+    // Look for "viewer_igid":"14710451462" or actorID patterns
+    const match = text.match(/"viewer_igid"\s*:\s*"(\d+)"/);
+    if (match) return match[1];
+  }
+  // Also try the av parameter from any graphql request data
+  for (const script of scripts) {
+    const text = script.textContent || '';
+    const match = text.match(/"actorID"\s*:\s*"(\d+)"/);
+    if (match) return match[1];
+  }
+  return null;
+}
 import { getAppId } from './interceptor';
 
 /**
