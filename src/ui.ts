@@ -38,45 +38,98 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
   panel.id = 'uninsta-panel';
   panel.style.display = 'none';
 
-  panel.innerHTML = `
-    <div id="uninsta-header">
-      <h3>unInsta</h3>
-      <button id="uninsta-btn-minimize" title="Minimize">&minus;</button>
-      <button id="uninsta-btn-close" title="Close">&times;</button>
-    </div>
-    <div id="uninsta-status">
-      <div class="status-row">
-        <span id="uninsta-status-text">Status: Ready</span>
-      </div>
-      <div class="status-row">
-        <span id="uninsta-status-thread">Thread: --</span>
-      </div>
-      <div class="status-row">
-        <span id="uninsta-status-appid">App ID: Not captured</span>
-        <button id="uninsta-btn-retry-appid" title="Scan page for App ID">Retry</button>
-      </div>
-    </div>
-    <div id="uninsta-boundary">
-      <label>Boundary (optional)</label>
-      <div class="picker-row">
-        <button id="uninsta-btn-pick">Pick message</button>
-        <span id="uninsta-picker-preview">No message selected</span>
-        <button id="uninsta-btn-clear-picker" style="display:none" title="Clear">&times;</button>
-      </div>
-      <input type="datetime-local" id="uninsta-datetime" title="Only unsend messages newer than this date">
-    </div>
-    <div id="uninsta-controls">
-      <button id="uninsta-btn-start">Unsend All</button>
-      <button id="uninsta-btn-stop" disabled>Stop</button>
-    </div>
-    <div id="uninsta-log"></div>
-    <div id="uninsta-progress">
-      <span id="uninsta-progress-text">Ready</span>
-      <div id="uninsta-progress-bar">
-        <div id="uninsta-progress-bar-fill"></div>
-      </div>
-    </div>
-  `;
+  // Build DOM without innerHTML to pass AMO validation
+  const header = document.createElement('div');
+  header.id = 'uninsta-header';
+  const h3 = document.createElement('h3');
+  h3.textContent = 'unInsta';
+  const btnMinimize = document.createElement('button');
+  btnMinimize.id = 'uninsta-btn-minimize';
+  btnMinimize.title = 'Minimize';
+  btnMinimize.textContent = '\u2212';
+  const btnClose = document.createElement('button');
+  btnClose.id = 'uninsta-btn-close';
+  btnClose.title = 'Close';
+  btnClose.textContent = '\u00D7';
+  header.append(h3, btnMinimize, btnClose);
+
+  const status = document.createElement('div');
+  status.id = 'uninsta-status';
+  const statusRow1 = document.createElement('div');
+  statusRow1.className = 'status-row';
+  const statusText = document.createElement('span');
+  statusText.id = 'uninsta-status-text';
+  statusText.textContent = 'Status: Ready';
+  statusRow1.append(statusText);
+  const statusRow2 = document.createElement('div');
+  statusRow2.className = 'status-row';
+  const threadText = document.createElement('span');
+  threadText.id = 'uninsta-status-thread';
+  threadText.textContent = 'Thread: --';
+  statusRow2.append(threadText);
+  const statusRow3 = document.createElement('div');
+  statusRow3.className = 'status-row';
+  const appIdText = document.createElement('span');
+  appIdText.id = 'uninsta-status-appid';
+  appIdText.textContent = 'App ID: Not captured';
+  const btnRetryAppId = document.createElement('button');
+  btnRetryAppId.id = 'uninsta-btn-retry-appid';
+  btnRetryAppId.title = 'Scan page for App ID';
+  btnRetryAppId.textContent = 'Retry';
+  statusRow3.append(appIdText, btnRetryAppId);
+  status.append(statusRow1, statusRow2, statusRow3);
+
+  const boundary = document.createElement('div');
+  boundary.id = 'uninsta-boundary';
+  const boundaryLabel = document.createElement('label');
+  boundaryLabel.textContent = 'Boundary (optional)';
+  const pickerRow = document.createElement('div');
+  pickerRow.className = 'picker-row';
+  const btnPick = document.createElement('button');
+  btnPick.id = 'uninsta-btn-pick';
+  btnPick.textContent = 'Pick message';
+  const pickerPreview = document.createElement('span');
+  pickerPreview.id = 'uninsta-picker-preview';
+  pickerPreview.textContent = 'No message selected';
+  const btnClearPicker = document.createElement('button');
+  btnClearPicker.id = 'uninsta-btn-clear-picker';
+  btnClearPicker.style.display = 'none';
+  btnClearPicker.title = 'Clear';
+  btnClearPicker.textContent = '\u00D7';
+  pickerRow.append(btnPick, pickerPreview, btnClearPicker);
+  const datetimeInput = document.createElement('input');
+  datetimeInput.type = 'datetime-local';
+  datetimeInput.id = 'uninsta-datetime';
+  datetimeInput.title = 'Only unsend messages newer than this date';
+  boundary.append(boundaryLabel, pickerRow, datetimeInput);
+
+  const controls = document.createElement('div');
+  controls.id = 'uninsta-controls';
+  const btnStart = document.createElement('button');
+  btnStart.id = 'uninsta-btn-start';
+  btnStart.textContent = 'Unsend All';
+  const btnStop = document.createElement('button');
+  btnStop.id = 'uninsta-btn-stop';
+  btnStop.disabled = true;
+  btnStop.textContent = 'Stop';
+  controls.append(btnStart, btnStop);
+
+  const logArea = document.createElement('div');
+  logArea.id = 'uninsta-log';
+
+  const progress = document.createElement('div');
+  progress.id = 'uninsta-progress';
+  const progressText = document.createElement('span');
+  progressText.id = 'uninsta-progress-text';
+  progressText.textContent = 'Ready';
+  const progressBar = document.createElement('div');
+  progressBar.id = 'uninsta-progress-bar';
+  const progressBarFill = document.createElement('div');
+  progressBarFill.id = 'uninsta-progress-bar-fill';
+  progressBar.append(progressBarFill);
+  progress.append(progressText, progressBar);
+
+  panel.append(header, status, boundary, controls, logArea, progress);
 
   document.body.appendChild(panel);
 
@@ -163,7 +216,7 @@ export function createTriggerButton(panel: HTMLDivElement, onShow?: () => void):
   const btn = document.createElement('button');
   btn.id = 'uninsta-trigger';
   btn.title = 'unInsta - Unsend messages';
-  btn.innerHTML = '\u2716'; // X mark character
+  btn.textContent = '\u2716';
   btn.addEventListener('click', () => {
     const isVisible = panel.style.display !== 'none';
     panel.style.display = isVisible ? 'none' : 'flex';

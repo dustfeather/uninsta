@@ -94,10 +94,14 @@ const manifest = {
   ],
   background: {
     service_worker: 'background.js',
+    scripts: ['background.js'],
   },
   browser_specific_settings: {
     gecko: {
       id: 'uninsta@dustfeather',
+      data_collection_permissions: {
+        required: ['none'],
+      },
     },
   },
 };
