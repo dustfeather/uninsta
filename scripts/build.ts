@@ -114,21 +114,24 @@ console.log(`Built dist/extension/ (v${buildVersion})`);
 
 // ── 3. Zip extension ────────────────────────────────────────────────────────
 
-async function zipExtension(): Promise<void> {
+async function zipDir(dir: string, outPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const output = createWriteStream(join(root, 'dist/uninsta-extension.zip'));
+    const output = createWriteStream(outPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
 
     output.on('close', () => {
-      console.log(`Built dist/uninsta-extension.zip (${archive.pointer()} bytes)`);
+      console.log(`Built ${outPath} (${archive.pointer()} bytes)`);
       resolve();
     });
 
     archive.on('error', reject);
     archive.pipe(output);
-    archive.directory(extDir, false);
+    archive.directory(dir, false);
     archive.finalize();
   });
 }
 
-zipExtension();
+Promise.all([
+  zipDir(extDir, join(root, 'dist/uninsta-extension.zip')),
+  zipDir(extDir, join(root, 'dist/uninsta-extension.xpi')),
+]);

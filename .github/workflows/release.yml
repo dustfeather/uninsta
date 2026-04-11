@@ -52,6 +52,7 @@ jobs:
           files: |
             dist/uninsta.user.js
             dist/uninsta-extension.zip
+            dist/uninsta-extension.xpi
           generate_release_notes: true
 
       - name: Publish to Chrome Web Store
