@@ -117,7 +117,7 @@ export class UnsendEngine {
 
           const preview = msg.message?.text
             ? `"${msg.message.text.substring(0, 40)}${msg.message.text.length > 40 ? '...' : ''}"`
-            : `[${msg.__typename || 'media'}]`;
+            : '[SharedContent]';
           const dateStr = msg.timestamp_ms ? new Date(msg.timestamp_ms).toISOString().replace('T', ' ').substring(0, 19) : '';
           const count = this.state.unsentCount + this.state.failedCount + 1;
 
