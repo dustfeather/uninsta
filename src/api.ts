@@ -85,11 +85,12 @@ export async function fetchThreadMessages(
   }
 
   const json = await resp.json();
+  console.log('[unInsta] GraphQL response:', JSON.stringify(json).substring(0, 1000));
 
   // Navigate the GraphQL response structure
-  // The response is typically: { data: { node: { messages: { edges: [...], page_info: {...} } } } }
-  const node = json?.data?.node || json?.data?.xdt_api__v1__direct_v2__thread_by_id || json?.data;
-  const messagesConnection = node?.messages || node?.thread?.messages;
+  // Response: { data: { fetch__SlideThread: { as_ig_direct_thread: { slide_messages: { edges: [...], page_info: {...} } } } } }
+  const slideThread = json?.data?.fetch__SlideThread?.as_ig_direct_thread;
+  const messagesConnection = slideThread?.slide_messages;
 
   if (!messagesConnection?.edges) {
     return { messages: [], pageInfo: { has_previous_page: false, start_cursor: null, end_cursor: null, has_next_page: false } };
@@ -97,12 +98,21 @@ export async function fetchThreadMessages(
 
   const messages: IGMessage[] = messagesConnection.edges.map((edge: any) => {
     const msg = edge.node;
+    // Extract text from the content structure
+    let text: string | undefined;
+    if (msg.content?.__typename === 'SlideMessageText') {
+      text = msg.text_body || msg.content?.text_body;
+    } else if (msg.content?.xma?.xmaTitle) {
+      text = msg.content.xma.xmaTitle;
+    }
+
     return {
-      message_id: msg.message_id || msg.id,
-      sender_id: String(msg.sender_id || msg.user_id || msg.message_sender?.id || ''),
-      timestamp_ms: msg.timestamp_ms || msg.timestamp_precise || msg.timestamp || 0,
-      message: msg.message || (msg.text ? { text: msg.text } : undefined),
-      __typename: msg.__typename,
+      message_id: msg.message_id,
+      // sender_fbid is the primary ID, but also store sender.igid for matching
+      sender_id: String(msg.sender?.igid || msg.sender_fbid || ''),
+      timestamp_ms: typeof msg.timestamp_ms === 'string' ? parseInt(msg.timestamp_ms, 10) : (msg.timestamp_ms || 0),
+      message: text ? { text } : undefined,
+      __typename: msg.content?.__typename || 'unknown',
     };
   });
 
