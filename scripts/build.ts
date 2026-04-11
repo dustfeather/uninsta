@@ -99,6 +99,7 @@ const manifest = {
   browser_specific_settings: {
     gecko: {
       id: 'uninsta@dustfeather',
+      strict_min_version: '149.0',
       data_collection_permissions: {
         required: ['none'],
       },

@@ -27,21 +27,18 @@ unInsta uses Instagram's internal API to iterate through all your messages in a 
 
 Pick **one** of the two methods below -- you don't need both.
 
-### Browser Extension (Chrome / Edge / Firefox) -- Recommended
+### Firefox -- Recommended
+
+Install directly from [Mozilla Add-ons](https://addons.mozilla.org/en-US/firefox/addon/uninsta/).
+
+### Chrome / Edge
 
 1. Go to the [latest release](../../releases/latest)
 2. Download `uninsta-extension.zip`
 3. Unzip the file
-
-**Chrome / Edge:**
-- Navigate to `chrome://extensions`
-- Enable "Developer mode"
-- Click "Load unpacked" and select the unzipped folder
-
-**Firefox:**
-- Navigate to `about:debugging#/runtime/this-firefox`
-- Click "Load Temporary Add-on"
-- Select any file inside the unzipped folder
+4. Navigate to `chrome://extensions`
+5. Enable "Developer mode"
+6. Click "Load unpacked" and select the unzipped folder
 
 ### Tampermonkey
 
