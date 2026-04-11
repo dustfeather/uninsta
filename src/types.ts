@@ -1,6 +1,6 @@
 /** A single message node from Instagram's GraphQL thread response. */
 export interface IGMessage {
-  message_id: string; // "REDACTED_MESSAGE_ID"
+  message_id: string; // format: "mid.$xxxxx"
   sender_id: string;
   timestamp_ms: number; // milliseconds
   message?: { text?: string };
@@ -17,8 +17,8 @@ export interface IGPageInfo {
 
 /** Thread info extracted from page state. */
 export interface IGThreadInfo {
-  threadFbid: string; // "REDACTED_THREAD_FBID" - used in GraphQL queries
-  threadId: string; // "340282366841710301..." - used in unsend mutation
+  threadFbid: string; // numeric string - used in GraphQL queries
+  threadId: string; // long numeric string - used in unsend mutation
 }
 
 /** Collected auth credentials needed for API requests. */
