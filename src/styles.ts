@@ -67,6 +67,27 @@ export const PANEL_CSS = `
   display: flex;
   gap: 12px;
   margin-bottom: 2px;
+  align-items: center;
+}
+
+#uninsta-btn-retry-appid {
+  background: #30305a;
+  border: none;
+  color: #C13584;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+#uninsta-btn-retry-appid:hover {
+  background: #3a3a6a;
+}
+
+#uninsta-btn-retry-appid.captured {
+  display: none;
 }
 
 /* Boundary */
