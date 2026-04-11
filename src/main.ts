@@ -1,6 +1,6 @@
 import type { Boundary, EngineState } from './types';
 import { installInterceptor, getAppId, tryExtractAppIdFromPage } from './interceptor';
-import { getAuth, getThreadId } from './auth';
+import { getAuth, getThreadId, getThreadInfo, getCookie } from './auth';
 import { UnsendEngine } from './engine';
 import {
   injectStyles,
@@ -31,9 +31,7 @@ import { enterPickMode } from './picker';
 
   function refreshStatusInfo(): void {
     const threadId = getThreadId();
-    const cookie = document.cookie;
-    const userIdMatch = cookie.match(/(?:^|;\s*)ds_user_id=([^;]*)/);
-    const userId = userIdMatch ? decodeURIComponent(userIdMatch[1]) : null;
+    const userId = getCookie('ds_user_id');
     const appIdCaptured = getAppId() !== null;
     updateStatusInfo(uiElements.panel, threadId, userId, appIdCaptured);
     const retryBtn = uiElements.panel.querySelector('#uninsta-btn-retry-appid');
@@ -56,12 +54,19 @@ import { enterPickMode } from './picker';
       return;
     }
 
-    // Clear log
-    uiElements.logArea.innerHTML = '';
+    const threadInfo = getThreadInfo();
+    if (!threadInfo) {
+      log('Could not extract thread info from page. Try refreshing.', 'error');
+      return;
+    }
+    log(`Thread fbid: ${threadInfo.threadFbid}, id: ${threadInfo.threadId}`, 'debug');
+
+    // Clear log (keep the thread info line)
+    // uiElements.logArea.innerHTML = '';
 
     setRunningState(uiElements, true);
 
-    engine = new UnsendEngine(threadId, result.auth, boundary, {
+    engine = new UnsendEngine(threadInfo, result.auth, boundary, {
       onLog: log,
       onProgress: (state: EngineState) => updateProgress(uiElements, state),
       onComplete: (state: EngineState) => {
