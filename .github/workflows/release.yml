@@ -2,42 +2,28 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+
+permissions:
+  contents: write
 
 concurrency:
   group: release
   cancel-in-progress: true
 
-permissions:
-  contents: write
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Determine next version from git tags
-        id: version
-        run: |
-          LATEST=$(git tag --list 'v*' --sort=-version:refname | head -n1)
-          if [ -z "$LATEST" ]; then
-            LATEST="v0.0.0"
-          fi
-          CURRENT="${LATEST#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-          PATCH=$((PATCH + 1))
-          NEW="${MAJOR}.${MINOR}.${PATCH}"
-          echo "version=${NEW}" >> "$GITHUB_OUTPUT"
-          echo "tag=v${NEW}" >> "$GITHUB_OUTPUT"
-          echo "Next version: v${NEW} (from ${LATEST})"
 
       - uses: actions/setup-node@v6
         with:
@@ -46,48 +32,71 @@ jobs:
 
       - run: npm ci
 
+      - name: Determine next version from tags
+        id: version
+        run: |
+          latest=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$latest" ]; then
+            next="1.0.0"
+          else
+            IFS='.' read -r major minor patch <<< "${latest#v}"
+            next="$major.$minor.$((patch + 1))"
+          fi
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "tag=v$next" >> "$GITHUB_OUTPUT"
+          echo "Next version: $next (previous: ${latest:-none})"
+
       - name: Build with version
         run: npm run build
         env:
           UNINSTA_VERSION: ${{ steps.version.outputs.version }}
 
+      - name: Tag release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
       - name: Generate release notes
         run: |
-          PREV_TAG=$(git tag --list 'v*' --sort=-version:refname | head -n1)
+          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n2 | tail -1)
           if [ -n "$PREV_TAG" ]; then
             git log "${PREV_TAG}..HEAD" --pretty=format:"- %s" > dist/release-notes.txt
           else
             echo "- Initial release" > dist/release-notes.txt
           fi
 
-      - name: Create source zip for AMO review
-        run: git archive --format=zip --prefix=uninsta-source/ HEAD -o dist/uninsta-source.zip
+      - name: Package source code for AMO review
+        run: git archive --format=zip --prefix=uninsta-source/ -o dist/uninsta-source.zip HEAD
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-      - name: Create tag and release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
           files: |
-            dist/uninsta.user.js
             dist/uninsta-extension.zip
             dist/uninsta-extension.xpi
-          generate_release_notes: true
+            dist/uninsta.user.js
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: extensions
+          path: |
+            dist/uninsta-extension.zip
+            dist/uninsta-extension.xpi
+            dist/uninsta-source.zip
+            dist/release-notes.txt
 
   publish-chrome:
-    needs: build-and-release
+    needs: build
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: extensions
 
       - name: Publish to Chrome Web Store
         run: |
@@ -109,7 +118,7 @@ jobs:
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "x-goog-api-version: 2" \
             -X PUT \
-            -T dist/uninsta-extension.zip \
+            -T uninsta-extension.zip \
             "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.CHROME_EXTENSION_ID }}")
 
           HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -1)
@@ -141,16 +150,13 @@ jobs:
             fi
           fi
 
-  publish-amo:
-    needs: build-and-release
+  publish-firefox:
+    needs: build
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: extensions
 
       - uses: actions/setup-node@v6
         with:
@@ -178,16 +184,39 @@ jobs:
             "
           }
 
+          # Retry wrapper for 429 rate limits (up to 3 attempts, max 120s wait)
+          amo_curl() {
+            for attempt in 1 2 3; do
+              JWT=$(generate_jwt)
+              RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: JWT $JWT" "$@")
+              HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+              if [ "$HTTP_CODE" = "429" ]; then
+                RETRY_AFTER=$(echo "$RESPONSE" | sed '$d' | jq -r '.retry_after // 30')
+                if [ "$RETRY_AFTER" -gt 120 ] 2>/dev/null; then
+                  echo "Rate limited (429) but retry_after=${RETRY_AFTER}s exceeds 120s cap, giving up"
+                  echo "$RESPONSE"
+                  return 1
+                fi
+                echo "Rate limited (429), retrying in ${RETRY_AFTER}s (attempt $attempt/3)"
+                sleep "$RETRY_AFTER"
+              else
+                echo "$RESPONSE"
+                return 0
+              fi
+            done
+            echo "$RESPONSE"
+            return 1
+          }
+
           AMO_BASE="https://addons.mozilla.org/api/v5"
           ADDON_ID="uninsta@dustfeather"
 
           # Upload .xpi
-          JWT=$(generate_jwt)
-          UPLOAD_RESPONSE=$(curl -s \
-            -H "Authorization: JWT $JWT" \
-            -F "upload=@dist/uninsta-extension.xpi" \
+          UPLOAD_RESPONSE=$(amo_curl \
+            -F "upload=@uninsta-extension.xpi" \
             -F "channel=listed" \
             "$AMO_BASE/addons/upload/")
+          UPLOAD_RESPONSE=$(echo "$UPLOAD_RESPONSE" | sed '$d')
 
           UPLOAD_UUID=$(echo "$UPLOAD_RESPONSE" | jq -r '.uuid')
           echo "Upload UUID: $UPLOAD_UUID"
@@ -201,11 +230,8 @@ jobs:
           PROCESSED="false"
           for i in $(seq 1 60); do
             sleep 10
-            JWT=$(generate_jwt)
-
-            STATUS=$(curl -s \
-              -H "Authorization: JWT $JWT" \
-              "$AMO_BASE/addons/upload/$UPLOAD_UUID/")
+            POLL_RESPONSE=$(amo_curl "$AMO_BASE/addons/upload/$UPLOAD_UUID/")
+            STATUS=$(echo "$POLL_RESPONSE" | sed '$d')
 
             PROCESSED=$(echo "$STATUS" | jq -r '.processed')
             VALID=$(echo "$STATUS" | jq -r '.valid')
@@ -228,35 +254,19 @@ jobs:
             exit 1
           fi
 
-          # Create new version with source code and release notes (retry on 429)
-          NOTES=$(cat dist/release-notes.txt)
+          # Create new version with source code and release notes
+          NOTES=$(cat release-notes.txt)
           RELEASE_NOTES=$(jq -n --arg notes "$NOTES" '{"en-US": $notes}')
 
-          for attempt in 1 2 3; do
-            JWT=$(generate_jwt)
-            VERSION_RESPONSE=$(curl -s -w "\n%{http_code}" \
-              -H "Authorization: JWT $JWT" \
-              -F "upload=$UPLOAD_UUID" \
-              -F "source=@dist/uninsta-source.zip" \
-              -F "release_notes=$RELEASE_NOTES" \
-              "$AMO_BASE/addons/addon/$ADDON_ID/versions/")
+          VERSION_RESPONSE=$(amo_curl \
+            -F "upload=$UPLOAD_UUID" \
+            -F "source=@uninsta-source.zip" \
+            -F "release_notes=$RELEASE_NOTES" \
+            "$AMO_BASE/addons/addon/$ADDON_ID/versions/")
 
-            HTTP_CODE=$(echo "$VERSION_RESPONSE" | tail -1)
-            BODY=$(echo "$VERSION_RESPONSE" | sed '$d')
-            echo "Version create attempt $attempt ($HTTP_CODE): $BODY"
-
-            if [ "$HTTP_CODE" = "429" ]; then
-              WAIT=$(echo "$BODY" | jq -r '.detail' | grep -oP '\d+' || echo "60")
-              if [ "$WAIT" -gt 300 ] 2>/dev/null; then
-                echo "::warning::Rate limit wait too long (${WAIT}s), giving up"
-                exit 1
-              fi
-              echo "Rate limited, waiting ${WAIT}s..."
-              sleep "$WAIT"
-              continue
-            fi
-            break
-          done
+          HTTP_CODE=$(echo "$VERSION_RESPONSE" | tail -1)
+          BODY=$(echo "$VERSION_RESPONSE" | sed '$d')
+          echo "Version create ($HTTP_CODE): $BODY"
 
           if [ "$HTTP_CODE" != "201" ] && [ "$HTTP_CODE" != "200" ]; then
             if echo "$BODY" | grep -q "in review"; then
