@@ -46,10 +46,12 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
   const btnMinimize = document.createElement('button');
   btnMinimize.id = 'uninsta-btn-minimize';
   btnMinimize.title = 'Minimize';
+  btnMinimize.setAttribute('aria-label', 'Minimize panel');
   btnMinimize.textContent = '\u2212';
   const btnClose = document.createElement('button');
   btnClose.id = 'uninsta-btn-close';
   btnClose.title = 'Close';
+  btnClose.setAttribute('aria-label', 'Close panel');
   btnClose.textContent = '\u00D7';
   header.append(h3, btnMinimize, btnClose);
 
@@ -75,6 +77,7 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
   const btnRetryAppId = document.createElement('button');
   btnRetryAppId.id = 'uninsta-btn-retry-appid';
   btnRetryAppId.title = 'Scan page for App ID';
+  btnRetryAppId.setAttribute('aria-label', 'Retry App ID capture');
   btnRetryAppId.textContent = 'Retry';
   statusRow3.append(appIdText, btnRetryAppId);
   status.append(statusRow1, statusRow2, statusRow3);
@@ -95,6 +98,7 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
   btnClearPicker.id = 'uninsta-btn-clear-picker';
   btnClearPicker.style.display = 'none';
   btnClearPicker.title = 'Clear';
+  btnClearPicker.setAttribute('aria-label', 'Clear selected message');
   btnClearPicker.textContent = '\u00D7';
   pickerRow.append(btnPick, pickerPreview, btnClearPicker);
   const datetimeInput = document.createElement('input');
@@ -116,16 +120,23 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
 
   const logArea = document.createElement('div');
   logArea.id = 'uninsta-log';
+  logArea.setAttribute('role', 'log');
+  logArea.setAttribute('aria-label', 'Activity log');
 
   const progress = document.createElement('div');
   progress.id = 'uninsta-progress';
   const progressText = document.createElement('span');
   progressText.id = 'uninsta-progress-text';
+  progressText.setAttribute('aria-live', 'polite');
   progressText.textContent = 'Ready';
   const progressBar = document.createElement('div');
   progressBar.id = 'uninsta-progress-bar';
   const progressBarFill = document.createElement('div');
   progressBarFill.id = 'uninsta-progress-bar-fill';
+  progressBarFill.setAttribute('role', 'progressbar');
+  progressBarFill.setAttribute('aria-valuemin', '0');
+  progressBarFill.setAttribute('aria-valuemax', '100');
+  progressBarFill.setAttribute('aria-valuenow', '0');
   progressBar.append(progressBarFill);
   progress.append(progressText, progressBar);
 
@@ -216,6 +227,7 @@ export function createTriggerButton(panel: HTMLDivElement, onShow?: () => void):
   const btn = document.createElement('button');
   btn.id = 'uninsta-trigger';
   btn.title = 'unInsta - Unsend messages';
+  btn.setAttribute('aria-label', 'Toggle unInsta panel');
   btn.textContent = '\u2716';
   btn.addEventListener('click', () => {
     const isVisible = panel.style.display !== 'none';
@@ -314,6 +326,7 @@ export function updateProgress(
   }
 
   elements.progressBarFill.style.width = `${pct}%`;
+  elements.progressBarFill.setAttribute('aria-valuenow', String(pct));
 }
 
 /**

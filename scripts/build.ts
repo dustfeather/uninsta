@@ -2,12 +2,39 @@ import { buildSync } from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync, cpSync, createWriteStream } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 import archiver from 'archiver';
+import * as sass from 'sass';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'));
 const buildVersion = process.env.UNINSTA_VERSION || pkg.version.replace(/-.*$/, '') || '0.0.0';
+
+// ── 0. Compile SCSS ─────────────────────────────────────────────────────────
+
+// Extension panel styles → src/styles.ts (consumed by esbuild)
+const panelResult = sass.compile(join(root, 'src/panel.scss'), { style: 'expanded' });
+const panelCss = panelResult.css.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+writeFileSync(
+  join(root, 'src/styles.ts'),
+  `// Generated from src/panel.scss — do not edit directly\nexport const PANEL_CSS = \`\n${panelCss}\`;\n`,
+);
+console.log('Compiled src/panel.scss → src/styles.ts');
+
+// Landing page styles → docs/styles.css (served by GitHub Pages)
+const pageResult = sass.compile(join(root, 'docs/page.scss'), { style: 'expanded' });
+writeFileSync(
+  join(root, 'docs/styles.css'),
+  `/* Generated from docs/page.scss — do not edit directly */\n${pageResult.css}`,
+);
+console.log('Compiled docs/page.scss → docs/styles.css');
+
+// ── 0.5. Typecheck ──────────────────────────────────────────────────────────
+
+execSync('npx tsc --noEmit', { cwd: root, stdio: 'inherit' });
+
+// ── 1. Bundle helpers ───────────────────────────────────────────────────────
 
 function bundle(entryPoint: string): string {
   const result = buildSync({
@@ -21,7 +48,7 @@ function bundle(entryPoint: string): string {
   return new TextDecoder().decode(result.outputFiles[0].contents);
 }
 
-// ── 1. Userscript build ─────────────────────────────────────────────────────
+// ── 2. Userscript build ─────────────────────────────────────────────────────
 
 const tmHeader = `// ==UserScript==
 // @name            unInsta
@@ -40,7 +67,7 @@ mkdirSync(join(root, 'dist'), { recursive: true });
 writeFileSync(join(root, 'dist/uninsta.user.js'), tmHeader + userscriptCode);
 console.log(`Built dist/uninsta.user.js (v${buildVersion})`);
 
-// ── 2. Extension build ──────────────────────────────────────────────────────
+// ── 3. Extension build ──────────────────────────────────────────────────────
 
 const extDir = join(root, 'dist/extension');
 mkdirSync(join(extDir, 'icons'), { recursive: true });
@@ -113,7 +140,7 @@ cpSync(join(root, 'extension/icons'), join(extDir, 'icons'), { recursive: true }
 
 console.log(`Built dist/extension/ (v${buildVersion})`);
 
-// ── 3. Zip extension ────────────────────────────────────────────────────────
+// ── 4. Zip extension ────────────────────────────────────────────────────────
 
 async function zipDir(dir: string, outPath: string): Promise<void> {
   return new Promise((resolve, reject) => {

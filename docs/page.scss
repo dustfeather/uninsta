@@ -1,0 +1,501 @@
+// ── Mixins ────────────────────────────────────────────────────────
+
+@use 'sass:list';
+
+@mixin typescale($scale) {
+  font-family: var(--md-sys-typescale-#{$scale}-font);
+  font-size: var(--md-sys-typescale-#{$scale}-size);
+  font-weight: var(--md-sys-typescale-#{$scale}-weight);
+  line-height: var(--md-sys-typescale-#{$scale}-line-height);
+}
+
+@mixin transition($properties...) {
+  $result: ();
+  @each $prop in $properties {
+    $result: list.append($result,
+      $prop var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard),
+      comma);
+  }
+  transition: $result;
+}
+
+// ── MD3 Design Tokens ─────────────────────────────────────────────
+
+:root {
+  // Color — dark scheme (default), seed #C13584
+  --md-sys-color-primary: #FFB0CE;
+  --md-sys-color-on-primary: #5E1133;
+  --md-sys-color-primary-container: #7D2950;
+  --md-sys-color-on-primary-container: #FFD8E5;
+  --md-sys-color-secondary: #E2BDC7;
+  --md-sys-color-on-secondary: #422A31;
+  --md-sys-color-secondary-container: #5A3F47;
+  --md-sys-color-on-secondary-container: #FFD8E2;
+  --md-sys-color-tertiary: #EEBF94;
+  --md-sys-color-on-tertiary: #48290B;
+  --md-sys-color-tertiary-container: #623E1F;
+  --md-sys-color-on-tertiary-container: #FFDCBE;
+  --md-sys-color-error: #FFB4AB;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000A;
+  --md-sys-color-on-error-container: #FFB4AB;
+  --md-sys-color-surface: #1A1114;
+  --md-sys-color-on-surface: #F0DEE2;
+  --md-sys-color-on-surface-variant: #D5BFC5;
+  --md-sys-color-surface-container-lowest: #140C0F;
+  --md-sys-color-surface-container-low: #231A1D;
+  --md-sys-color-surface-container: #271E21;
+  --md-sys-color-surface-container-high: #322829;
+  --md-sys-color-surface-container-highest: #3D3336;
+  --md-sys-color-outline: #9E8C91;
+  --md-sys-color-outline-variant: #514348;
+  --md-sys-color-inverse-surface: #F0DEE2;
+  --md-sys-color-inverse-on-surface: #382E31;
+  --md-sys-color-inverse-primary: #9C3E68;
+  --md-sys-color-surface-dim: #1A1114;
+  --md-sys-color-surface-bright: #42383B;
+
+  // Brand gradient (not MD3 — retained for identity)
+  --brand-gradient: linear-gradient(135deg, #833AB4 0%, #C13584 40%, #E1306C 70%, #F77737 100%);
+  --brand-glow: rgba(193, 53, 132, 0.2);
+
+  // Typography — MD3 type scale
+  --md-sys-typescale-display-medium-font: 'Roboto Flex', sans-serif;
+  --md-sys-typescale-display-medium-size: 2.8125rem;
+  --md-sys-typescale-display-medium-weight: 400;
+  --md-sys-typescale-display-medium-line-height: 3.25rem;
+
+  --md-sys-typescale-headline-medium-font: 'Roboto Flex', sans-serif;
+  --md-sys-typescale-headline-medium-size: 1.75rem;
+  --md-sys-typescale-headline-medium-weight: 400;
+  --md-sys-typescale-headline-medium-line-height: 2.25rem;
+
+  --md-sys-typescale-title-medium-font: 'Roboto Flex', sans-serif;
+  --md-sys-typescale-title-medium-size: 1rem;
+  --md-sys-typescale-title-medium-weight: 500;
+  --md-sys-typescale-title-medium-line-height: 1.5rem;
+
+  --md-sys-typescale-body-large-font: 'Roboto Flex', sans-serif;
+  --md-sys-typescale-body-large-size: 1rem;
+  --md-sys-typescale-body-large-weight: 400;
+  --md-sys-typescale-body-large-line-height: 1.5rem;
+
+  --md-sys-typescale-body-medium-font: 'Roboto Flex', sans-serif;
+  --md-sys-typescale-body-medium-size: 0.875rem;
+  --md-sys-typescale-body-medium-weight: 400;
+  --md-sys-typescale-body-medium-line-height: 1.25rem;
+
+  --md-sys-typescale-body-small-font: 'Roboto Flex', sans-serif;
+  --md-sys-typescale-body-small-size: 0.75rem;
+  --md-sys-typescale-body-small-weight: 400;
+  --md-sys-typescale-body-small-line-height: 1rem;
+
+  --md-sys-typescale-label-large-font: 'Roboto Flex', sans-serif;
+  --md-sys-typescale-label-large-size: 0.875rem;
+  --md-sys-typescale-label-large-weight: 500;
+  --md-sys-typescale-label-large-line-height: 1.25rem;
+
+  --md-sys-typescale-label-medium-font: 'Roboto Flex', sans-serif;
+  --md-sys-typescale-label-medium-size: 0.75rem;
+  --md-sys-typescale-label-medium-weight: 500;
+  --md-sys-typescale-label-medium-line-height: 1rem;
+
+  // Shape — MD3 corner scale
+  --md-sys-shape-corner-none: 0;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
+
+  // Motion — MD3 easing and duration
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-duration-short4: 200ms;
+  --md-sys-motion-duration-medium2: 300ms;
+}
+
+// Color — light scheme
+@media (prefers-color-scheme: light) {
+  :root {
+    --md-sys-color-primary: #9C3E68;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-primary-container: #FFD8E5;
+    --md-sys-color-on-primary-container: #3E001C;
+    --md-sys-color-secondary: #74565E;
+    --md-sys-color-on-secondary: #FFFFFF;
+    --md-sys-color-secondary-container: #FFD8E2;
+    --md-sys-color-on-secondary-container: #2B151C;
+    --md-sys-color-tertiary: #7D5636;
+    --md-sys-color-on-tertiary: #FFFFFF;
+    --md-sys-color-tertiary-container: #FFDCBE;
+    --md-sys-color-on-tertiary-container: #2E1500;
+    --md-sys-color-error: #BA1A1A;
+    --md-sys-color-on-error: #FFFFFF;
+    --md-sys-color-error-container: #FFDAD6;
+    --md-sys-color-on-error-container: #410002;
+    --md-sys-color-surface: #FFF8F8;
+    --md-sys-color-on-surface: #231A1D;
+    --md-sys-color-on-surface-variant: #514348;
+    --md-sys-color-surface-container-lowest: #FFFFFF;
+    --md-sys-color-surface-container-low: #FFF0F2;
+    --md-sys-color-surface-container: #FBE9EC;
+    --md-sys-color-surface-container-high: #F5E5E8;
+    --md-sys-color-surface-container-highest: #F0DEE2;
+    --md-sys-color-outline: #837478;
+    --md-sys-color-outline-variant: #D5BFC5;
+    --md-sys-color-inverse-surface: #382E31;
+    --md-sys-color-inverse-on-surface: #FDEFEF;
+    --md-sys-color-inverse-primary: #FFB0CE;
+    --md-sys-color-surface-dim: #E9DBDE;
+    --md-sys-color-surface-bright: #FFF8F8;
+
+    --brand-glow: rgba(156, 62, 104, 0.08);
+  }
+}
+
+// ── Reset & Base ──────────────────────────────────────────────────
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  @include typescale(body-large);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--md-sys-color-primary);
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+}
+
+// Skip link for keyboard navigation
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  padding: 8px 16px;
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  border-radius: var(--md-sys-shape-corner-small);
+  font-weight: 500;
+  z-index: 100;
+  @include transition(top);
+
+  &:focus {
+    top: 16px;
+    text-decoration: none;
+  }
+}
+
+// Global focus indicator
+:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+}
+
+// ── Hero ──────────────────────────────────────────────────────────
+
+.hero {
+  text-align: center;
+  padding: 5rem 1.5rem 3rem;
+  background: radial-gradient(ellipse at 50% 0%, var(--brand-glow) 0%, transparent 60%);
+
+  h1 {
+    @include typescale(display-medium);
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.02em;
+    background: var(--brand-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  p {
+    @include typescale(body-large);
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--md-sys-color-on-surface-variant);
+    max-width: 520px;
+    margin: 0 auto 2rem;
+  }
+}
+
+.hero-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--md-sys-shape-corner-large);
+  margin-bottom: 1.5rem;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+// ── Buttons (MD3 filled + tonal) ──────────────────────────────────
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: var(--md-sys-shape-corner-full);
+  @include typescale(label-large);
+  @include transition(box-shadow, transform);
+  height: 40px;
+
+  &:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible { outline-offset: 3px; }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+}
+
+.btn-primary {
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    box-shadow: 0 2px 6px 2px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.btn-secondary {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+
+  &:hover {
+    box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+}
+
+// ── Screenshots ───────────────────────────────────────────────────
+
+.screenshot-wrap {
+  text-align: center;
+  padding: 0 1.5rem 4rem;
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.screenshot {
+  max-width: 380px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  align-self: flex-start;
+  border-radius: var(--md-sys-shape-corner-medium);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+// ── Sections ──────────────────────────────────────────────────────
+
+.container {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+section {
+  padding: 3rem 0;
+
+  h2 {
+    @include typescale(headline-medium);
+    margin-bottom: 1.5rem;
+  }
+}
+
+// ── Feature Cards (MD3 outlined card) ─────────────────────────────
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.feature {
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: 1.5rem;
+  @include transition(box-shadow);
+
+  &:hover {
+    box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  h3 {
+    @include typescale(title-medium);
+    margin-bottom: 0.35rem;
+  }
+
+  p {
+    @include typescale(body-medium);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+// ── Steps ─────────────────────────────────────────────────────────
+
+.steps {
+  counter-reset: step;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  li {
+    counter-increment: step;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    @include typescale(body-large);
+
+    &::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: var(--md-sys-shape-corner-full);
+      @include typescale(label-medium);
+      font-weight: 600;
+      color: var(--md-sys-color-primary);
+    }
+  }
+}
+
+// ── Install Cards ─────────────────────────────────────────────────
+
+.install-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.install-card {
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: 1.5rem;
+
+  h3 {
+    @include typescale(title-medium);
+    margin-bottom: 0.5rem;
+  }
+
+  p, ol {
+    @include typescale(body-medium);
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  ol {
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  code {
+    background: var(--md-sys-color-surface-container-highest);
+    padding: 0.15em 0.4em;
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    font-size: 0.85em;
+  }
+}
+
+// ── Privacy Box ───────────────────────────────────────────────────
+
+.privacy-box {
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: 1.5rem;
+
+  p {
+    @include typescale(body-medium);
+    color: var(--md-sys-color-on-surface-variant);
+    line-height: 1.5;
+  }
+}
+
+// ── Footer ────────────────────────────────────────────────────────
+
+footer {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  @include typescale(body-small);
+  color: var(--md-sys-color-on-surface-variant);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  margin-top: 2rem;
+
+  a {
+    color: var(--md-sys-color-on-surface-variant);
+
+    &:hover { color: var(--md-sys-color-on-surface); }
+  }
+}
+
+// ── Responsive — MD3 breakpoints ──────────────────────────────────
+
+// Compact (< 600px)
+@media (max-width: 599px) {
+  .install-grid { grid-template-columns: 1fr; }
+
+  .hero h1 {
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+}
+
+// Medium (600–839px)
+@media (min-width: 600px) and (max-width: 839px) {
+  .install-grid { grid-template-columns: 1fr 1fr; }
+}
+
+// ── Reduced motion ────────────────────────────────────────────────
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

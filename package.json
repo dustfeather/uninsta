@@ -7,7 +7,7 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && tsx scripts/build.ts",
+    "build": "tsx scripts/build.ts",
     "dev": "tsx scripts/dev.ts"
   },
   "devDependencies": {
@@ -16,6 +16,7 @@
     "@types/node": "^25.6.0",
     "archiver": "^7.0.1",
     "esbuild": "^0.28.0",
+    "sass": "^1.99.0",
     "sharp": "^0.34.5",
     "tsx": "^4.19.0",
     "typescript": "^6.0.2"
