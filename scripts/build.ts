@@ -15,7 +15,7 @@ const buildVersion = process.env.UNINSTA_VERSION || pkg.version.replace(/-.*$/, 
 
 // Extension panel styles → src/styles.ts (consumed by esbuild)
 const panelResult = sass.compile(join(root, 'src/panel.scss'), { style: 'expanded' });
-const panelCss = panelResult.css.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+const panelCss = panelResult.css.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
 writeFileSync(
   join(root, 'src/styles.ts'),
   `// Generated from src/panel.scss — do not edit directly\nexport const PANEL_CSS = \`\n${panelCss}\`;\n`,
