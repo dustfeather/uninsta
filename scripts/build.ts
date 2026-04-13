@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import archiver from 'archiver';
 import * as sass from 'sass';
+import sharp from 'sharp';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -87,13 +88,13 @@ const manifest = {
   name: 'unInsta',
   description: 'Unsend all your messages in an Instagram DM conversation',
   version: buildVersion,
-  permissions: [] as string[],
+  permissions: ['tabs'] as string[],
   action: {
     default_icon: {
-      '16': 'icons/icon16.png',
-      '32': 'icons/icon32.png',
-      '48': 'icons/icon48.png',
-      '128': 'icons/icon128.png',
+      '16': 'icons/icon16-gray.png',
+      '32': 'icons/icon32-gray.png',
+      '48': 'icons/icon48-gray.png',
+      '128': 'icons/icon128-gray.png',
     },
     default_title: 'unInsta - Toggle panel',
   },
@@ -138,7 +139,18 @@ writeFileSync(join(extDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 // Copy icons
 cpSync(join(root, 'extension/icons'), join(extDir, 'icons'), { recursive: true });
 
-console.log(`Built dist/extension/ (v${buildVersion})`);
+// Generate grayscale icons for inactive state
+const iconSizes = [16, 32, 48, 128];
+
+async function generateGrayIcons(): Promise<void> {
+  await Promise.all(
+    iconSizes.map((size) =>
+      sharp(join(extDir, `icons/icon${size}.png`))
+        .grayscale()
+        .toFile(join(extDir, `icons/icon${size}-gray.png`)),
+    ),
+  );
+}
 
 // ── 4. Zip extension ────────────────────────────────────────────────────────
 
@@ -159,7 +171,12 @@ async function zipDir(dir: string, outPath: string): Promise<void> {
   });
 }
 
-Promise.all([
-  zipDir(extDir, join(root, 'dist/uninsta-extension.zip')),
-  zipDir(extDir, join(root, 'dist/uninsta-extension.xpi')),
-]);
+(async () => {
+  await generateGrayIcons();
+  console.log(`Built dist/extension/ (v${buildVersion})`);
+
+  await Promise.all([
+    zipDir(extDir, join(root, 'dist/uninsta-extension.zip')),
+    zipDir(extDir, join(root, 'dist/uninsta-extension.xpi')),
+  ]);
+})();
