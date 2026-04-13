@@ -88,7 +88,7 @@ const manifest = {
   name: 'unInsta',
   description: 'Unsend all your messages in an Instagram DM conversation',
   version: buildVersion,
-  permissions: ['tabs'] as string[],
+  permissions: [] as string[],
   action: {
     default_icon: {
       '16': 'icons/icon16-gray.png',

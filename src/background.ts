@@ -5,35 +5,14 @@ const COLOR_ICONS = {
   128: 'icons/icon128.png',
 };
 
-const GRAY_ICONS = {
-  16: 'icons/icon16-gray.png',
-  32: 'icons/icon32-gray.png',
-  48: 'icons/icon48-gray.png',
-  128: 'icons/icon128-gray.png',
-};
+// Content script signals when it loads on an Instagram DM page
+chrome.runtime.onMessage.addListener((msg: { type: string }, sender) => {
+  if (msg.type === 'uninsta-active' && sender.tab?.id) {
+    chrome.action.setIcon({ tabId: sender.tab.id, path: COLOR_ICONS });
+  }
 
-function isInstagramDM(url: string | undefined): boolean {
-  return !!url && url.startsWith('https://www.instagram.com/direct/');
-}
-
-function updateIcon(tabId: number, url: string | undefined): void {
-  const path = isInstagramDM(url) ? COLOR_ICONS : GRAY_ICONS;
-  chrome.action.setIcon({ tabId, path });
-}
-
-// Update icon when the active tab changes
-chrome.tabs.onActivated.addListener(({ tabId }) => {
-  chrome.tabs.get(tabId, (tab) => {
-    if (!chrome.runtime.lastError) {
-      updateIcon(tabId, tab.url);
-    }
-  });
-});
-
-// Update icon when a tab navigates
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.url || changeInfo.status === 'complete') {
-    updateIcon(tabId, tab.url);
+  if (msg.type === 'uninsta-toggle') {
+    // Forward to content script (bridge → background → main world via bridge)
   }
 });
 
