@@ -13,12 +13,14 @@ export interface UIElements {
   pickerPreview: HTMLSpanElement;
   datetimeInput: HTMLInputElement;
   btnClearPicker: HTMLButtonElement;
+  btnClearCache: HTMLButtonElement;
 }
 
 export interface UICallbacks {
   onStart: (boundary: Boundary | null) => void;
   onStop: () => void;
   onPickModeEnter: () => void;
+  onClearCache: () => void;
 }
 
 /**
@@ -84,8 +86,17 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
 
   const boundary = document.createElement('div');
   boundary.id = 'uninsta-boundary';
+  const boundaryHeader = document.createElement('div');
+  boundaryHeader.className = 'boundary-header';
   const boundaryLabel = document.createElement('label');
-  boundaryLabel.textContent = 'Boundary (optional)';
+  boundaryLabel.textContent = 'Unsend everything older than (optional)';
+  const btnClearCache = document.createElement('button');
+  btnClearCache.id = 'uninsta-btn-clear-cache';
+  btnClearCache.type = 'button';
+  btnClearCache.title = 'Clear cached messages and pagination cursor';
+  btnClearCache.setAttribute('aria-label', 'Clear cache');
+  btnClearCache.textContent = 'Clear cache';
+  boundaryHeader.append(boundaryLabel, btnClearCache);
   const pickerRow = document.createElement('div');
   pickerRow.className = 'picker-row';
   const btnPick = document.createElement('button');
@@ -104,8 +115,8 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
   const datetimeInput = document.createElement('input');
   datetimeInput.type = 'datetime-local';
   datetimeInput.id = 'uninsta-datetime';
-  datetimeInput.title = 'Only unsend messages newer than this date';
-  boundary.append(boundaryLabel, pickerRow, datetimeInput);
+  datetimeInput.title = 'Only unsend messages older than this date';
+  boundary.append(boundaryHeader, pickerRow, datetimeInput);
 
   const controls = document.createElement('div');
   controls.id = 'uninsta-controls';
@@ -157,6 +168,7 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
     pickerPreview: panel.querySelector('#uninsta-picker-preview')!,
     datetimeInput: panel.querySelector('#uninsta-datetime')!,
     btnClearPicker: panel.querySelector('#uninsta-btn-clear-picker')!,
+    btnClearCache: panel.querySelector('#uninsta-btn-clear-cache')!,
   };
 
   // Wire up close/minimize
@@ -194,6 +206,17 @@ export function buildPanel(callbacks: UICallbacks): UIElements {
     elements.pickerPreview.textContent = 'No message selected';
     elements.pickerPreview.removeAttribute('data-item-id');
     elements.btnClearPicker.style.display = 'none';
+    callbacks.onClearCache();
+  });
+
+  // Auto-reset cache when datetime boundary changes
+  elements.datetimeInput.addEventListener('change', () => {
+    callbacks.onClearCache();
+  });
+
+  // Manual clear-cache button
+  elements.btnClearCache.addEventListener('click', () => {
+    callbacks.onClearCache();
   });
 
   // Make header draggable
@@ -349,6 +372,10 @@ export function updateStatusInfo(
 export function setRunningState(elements: UIElements, running: boolean): void {
   elements.btnStart.disabled = running;
   elements.btnStop.disabled = !running;
+  elements.btnPick.disabled = running;
+  elements.btnClearPicker.disabled = running;
+  elements.btnClearCache.disabled = running;
+  elements.datetimeInput.disabled = running;
   elements.statusText.textContent = running ? 'Status: Running...' : 'Status: Ready';
 }
 

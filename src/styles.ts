@@ -121,6 +121,13 @@ export const PANEL_CSS = `
   background: var(--md-sys-color-surface);
   border-bottom: 1px solid var(--md-sys-color-outline);
 }
+#uninsta-boundary .boundary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
 #uninsta-boundary label {
   display: block;
   font-size: 11px;
@@ -128,7 +135,6 @@ export const PANEL_CSS = `
   color: var(--md-sys-color-on-surface-variant);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
 }
 #uninsta-boundary .picker-row {
   display: flex;
@@ -157,6 +163,33 @@ export const PANEL_CSS = `
 #uninsta-boundary input[type=datetime-local]:focus {
   outline: none;
   border-color: var(--brand-accent);
+}
+#uninsta-boundary input[type=datetime-local]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#uninsta-btn-clear-cache {
+  background: transparent;
+  border: 1px solid var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: var(--md-sys-shape-corner-full);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard), color var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+#uninsta-btn-clear-cache:hover {
+  border-color: var(--brand-accent);
+  color: var(--brand-accent);
+}
+#uninsta-btn-clear-cache:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 #uninsta-controls {

@@ -54,6 +54,10 @@ export class UnsendEngine {
     const boundaryTimestamp = this.boundary?.timestamp ?? null;
     const boundaryMessageId = this.boundary?.messageId ?? null;
     const threadFbid = this.threadInfo.threadFbid;
+    // Track whether we've walked past the picked-message boundary while
+    // paginating newest → oldest. If no message-ID boundary is set, treat as
+    // already passed so the timestamp boundary (or no boundary) takes over.
+    let pastMessageBoundary = !boundaryMessageId;
 
     try {
       // ── Phase 1: Collect all messages into IndexedDB ─────────────────
@@ -72,9 +76,7 @@ export class UnsendEngine {
           this.callbacks.onLog('Resuming collection from last position...', 'info');
         }
 
-        let reachedBoundary = false;
-
-        while (!reachedBoundary) {
+        while (true) {
           if (this.abortFlag) {
             this.callbacks.onLog('Stopped by user.', 'warn');
             break;
@@ -91,21 +93,22 @@ export class UnsendEngine {
             break;
           }
 
-          // Filter to own messages and apply boundaries
-          const ownMessages = messages.filter(
-            (msg) => String(msg.sender_id) === this.auth.userId,
-          );
-
+          // Walk newest → oldest. Apply boundaries (skip messages newer than
+          // boundary), then filter to own messages.
           const toStore: IGMessage[] = [];
-          for (const msg of ownMessages) {
+          for (const msg of messages) {
+            // The picked-message boundary may belong to either party — check
+            // it against ALL messages so we correctly transition.
             if (boundaryMessageId && msg.message_id === boundaryMessageId) {
-              reachedBoundary = true;
-              break;
+              pastMessageBoundary = true;
+              continue;
             }
-            if (boundaryTimestamp != null && msg.timestamp_ms < boundaryTimestamp) {
-              reachedBoundary = true;
-              break;
-            }
+            if (!pastMessageBoundary) continue;
+
+            if (boundaryTimestamp != null && msg.timestamp_ms >= boundaryTimestamp) continue;
+
+            if (String(msg.sender_id) !== this.auth.userId) continue;
+
             toStore.push(msg);
           }
 

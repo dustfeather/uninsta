@@ -17,7 +17,7 @@ unInsta uses Instagram's internal API to iterate through all your messages in a 
 ## Features
 
 - Unsend all your messages in the currently open DM conversation
-- Set a boundary to only unsend messages newer than a specific date or message
+- Set a boundary to only unsend messages older than a specific date or message
 - Auto-detects authentication from your active Instagram session
 - Proactive rate limiting with jittered delays
 - Floating panel with real-time log and progress tracking
