@@ -15,6 +15,7 @@ import {
 } from './ui';
 import type { UIElements } from './ui';
 import { enterPickMode } from './picker';
+import { clearMessages, clearCursor } from './storage';
 
 (function uninsta() {
   'use strict';
@@ -101,6 +102,7 @@ import { enterPickMode } from './picker';
         uiElements.pickerPreview.setAttribute('data-item-id', itemId);
         uiElements.btnClearPicker.style.display = '';
         log(`Boundary set: ${preview} (ID: ${itemId})`, 'info');
+        handleClearCache();
         pickModeCleanup = null;
       },
       () => {
@@ -110,6 +112,17 @@ import { enterPickMode } from './picker';
     );
   }
 
+  async function handleClearCache(): Promise<void> {
+    const threadInfo = getThreadInfo();
+    if (!threadInfo) {
+      log('Cannot clear cache: no thread context.', 'warn');
+      return;
+    }
+    await clearMessages(threadInfo.threadFbid);
+    await clearCursor(threadInfo.threadFbid);
+    log('Cache cleared.', 'info');
+  }
+
   function init(): void {
     injectStyles();
 
@@ -117,6 +130,7 @@ import { enterPickMode } from './picker';
       onStart: handleStart,
       onStop: handleStop,
       onPickModeEnter: handlePickModeEnter,
+      onClearCache: handleClearCache,
     });
 
     const triggerBtn = createTriggerButton(uiElements.panel, refreshStatusInfo);
