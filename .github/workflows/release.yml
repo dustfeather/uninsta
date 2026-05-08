@@ -158,6 +158,9 @@ jobs:
         with:
           name: extensions
 
+      - name: Stagger AMO publish to avoid 3/min user throttle
+        run: sleep $(( RANDOM % 60 ))
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -184,27 +187,40 @@ jobs:
             "
           }
 
-          # Retry wrapper for 429 rate limits (up to 3 attempts, max 120s wait)
+          # Retry wrapper for 429 rate limits (up to 5 attempts, max 90s wait)
+          # Diagnostics go to stderr so they survive $() capture in callers.
           amo_curl() {
-            for attempt in 1 2 3; do
-              JWT=$(generate_jwt)
-              RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: JWT $JWT" "$@")
-              HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-              if [ "$HTTP_CODE" = "429" ]; then
-                RETRY_AFTER=$(echo "$RESPONSE" | sed '$d' | jq -r '.retry_after // 30')
-                if [ "$RETRY_AFTER" -gt 120 ] 2>/dev/null; then
-                  echo "Rate limited (429) but retry_after=${RETRY_AFTER}s exceeds 120s cap, giving up"
-                  echo "$RESPONSE"
-                  return 1
-                fi
-                echo "Rate limited (429), retrying in ${RETRY_AFTER}s (attempt $attempt/3)"
-                sleep "$RETRY_AFTER"
-              else
-                echo "$RESPONSE"
+            local headers_file response http_code retry_after
+            headers_file=$(mktemp)
+            trap 'rm -f "$headers_file"' RETURN
+
+            for attempt in 1 2 3 4 5; do
+              local jwt
+              jwt=$(generate_jwt)
+              response=$(curl -sS -D "$headers_file" -w "\n%{http_code}" \
+                             -H "Authorization: JWT $jwt" "$@" || true)
+              http_code=$(echo "$response" | tail -1)
+
+              if [ "$http_code" != "429" ]; then
+                echo "$response"
                 return 0
               fi
+
+              retry_after=$(grep -i '^retry-after:' "$headers_file" \
+                            | tail -1 | awk '{print $2}' | tr -d '\r')
+              : "${retry_after:=60}"
+              if [ "$retry_after" -gt 90 ] 2>/dev/null; then
+                echo "amo_curl: retry-after ${retry_after}s exceeds 90s cap, giving up" >&2
+                echo "$response" >&2
+                return 1
+              fi
+
+              echo "amo_curl: 429 throttled, sleeping ${retry_after}s (attempt $attempt/5)" >&2
+              sleep "$retry_after"
             done
-            echo "$RESPONSE"
+
+            echo "amo_curl: exhausted 5 retries. Final response:" >&2
+            echo "$response" >&2
             return 1
           }
 
