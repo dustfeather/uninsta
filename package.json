@@ -12,8 +12,8 @@
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
-    "@types/chrome": "^0.1.40",
-    "@types/node": "^25.6.0",
+    "@types/chrome": "^0.1.42",
+    "@types/node": "^25.6.2",
     "archiver": "^7.0.1",
     "esbuild": "^0.28.0",
     "sass": "^1.99.0",
