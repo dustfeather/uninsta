@@ -15,7 +15,13 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  tests:
+    permissions:
+      contents: read
+    uses: dustfeather/shared-workflows/.github/workflows/node-test.yml@v1
+
   build:
+    needs: tests
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
