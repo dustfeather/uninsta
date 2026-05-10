@@ -92,14 +92,14 @@ jobs:
 
   publish-chrome:
     needs: build
-    uses: dustfeather/extension-workflows/.github/workflows/publish-chrome.yml@v1
+    uses: dustfeather/shared-workflows/.github/workflows/publish-chrome.yml@v1
     with:
       zip-name: uninsta-extension.zip
     secrets: inherit
 
   publish-firefox:
     needs: build
-    uses: dustfeather/extension-workflows/.github/workflows/publish-firefox.yml@v1
+    uses: dustfeather/shared-workflows/.github/workflows/publish-firefox.yml@v1
     with:
       xpi-name: uninsta-extension.xpi
       source-name: uninsta-source.zip
