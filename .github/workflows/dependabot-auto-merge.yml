@@ -5,31 +5,11 @@ on:
     types: [submitted]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
-  auto-merge:
-    if: |
-      github.event.review.state == 'approved' &&
-      github.event.pull_request.user.login == 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Enable auto-merge
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-          # Pick the first allowed merge method (priority: squash > rebase > merge).
-          methods=$(gh api "/repos/$REPO" --jq '
-            (if .allow_squash_merge then "--squash " else "" end) +
-            (if .allow_rebase_merge then "--rebase " else "" end) +
-            (if .allow_merge_commit then "--merge " else "" end)
-          ')
-          method=$(echo "$methods" | awk '{print $1}')
-          if [ -z "$method" ]; then
-            echo "::error::No merge method enabled on $REPO"
-            exit 1
-          fi
-          gh pr merge --auto "$method" "$PR_URL"
+  merge:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: dustfeather/shared-workflows/.github/workflows/dependabot-auto-merge.yml@v1
