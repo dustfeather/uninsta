@@ -1,0 +1,32 @@
+name: PR checks
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths-ignore:
+      - '.github/workflows/pr-checks.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    permissions:
+      contents: read
+    uses: dustfeather/shared-workflows/.github/workflows/node-test.yml@v1
+    with:
+      run-build: true
+
+  review:
+    needs: tests
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    uses: dustfeather/shared-workflows/.github/workflows/claude-code-review.yml@v1
+    secrets: inherit
