@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync, cpSync, createWriteStream } fro
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import * as sass from 'sass';
 import sharp from 'sharp';
 
@@ -157,7 +157,7 @@ async function generateGrayIcons(): Promise<void> {
 async function zipDir(dir: string, outPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const output = createWriteStream(outPath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
 
     output.on('close', () => {
       console.log(`Built ${outPath} (${archive.pointer()} bytes)`);
