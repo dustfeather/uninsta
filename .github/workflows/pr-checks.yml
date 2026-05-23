@@ -31,4 +31,8 @@ jobs:
       issues: read
       id-token: write
     uses: dustfeather/shared-workflows/.github/workflows/claude-code-review.yml@v1
+    with:
+      runner: arc-df
+      path-to-bun: /usr/local/bin/bun
+      path-to-claude: /usr/local/bin/claude
     secrets: inherit
