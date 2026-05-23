@@ -32,7 +32,7 @@ jobs:
       id-token: write
     uses: dustfeather/shared-workflows/.github/workflows/claude-code-review.yml@v1
     with:
-      runner: arc-df
+      runner: arc-df-uninsta
       path-to-bun: /usr/local/bin/bun
       path-to-claude: /usr/local/bin/claude
     secrets: inherit
