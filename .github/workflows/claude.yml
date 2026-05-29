@@ -18,5 +18,7 @@ jobs:
       issues: read
       id-token: write
       actions: read
-    uses: dustfeather/shared-workflows/.github/workflows/claude.yml@v1
+    uses: dustfeather/shared-workflows/.github/workflows/claude.yml@v2
+    with:
+      runner: arc-df-uninsta
     secrets: inherit
