@@ -24,7 +24,7 @@ jobs:
 
   build:
     needs: tests
-    runs-on: ubuntu-latest
+    runs-on: arc-df-uninsta
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
