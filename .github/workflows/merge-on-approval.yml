@@ -1,0 +1,23 @@
+name: Merge on approval
+
+# When a PR gets an approving review — including the approval the
+# claude-code-review job submits as claude[bot] via `gh pr review --approve`
+# — land it via the shared reusable workflow (rebase-merge, auto mode).
+# claude[bot] is a GitHub App, so its review DOES trigger this workflow
+# (only the default GITHUB_TOKEN is blocked from cascading events).
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+
+jobs:
+  merge:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v2
+    with:
+      runner: arc-df-uninsta
