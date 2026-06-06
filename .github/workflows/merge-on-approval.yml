@@ -18,6 +18,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v2
+    uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v4
     with:
       runner: arc-df-uninsta
