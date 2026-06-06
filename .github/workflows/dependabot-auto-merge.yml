@@ -12,6 +12,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: dustfeather/shared-workflows/.github/workflows/dependabot-auto-merge.yml@v2
+    uses: dustfeather/shared-workflows/.github/workflows/dependabot-auto-merge.yml@v3
     with:
       runner: arc-df-uninsta

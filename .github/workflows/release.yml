@@ -18,7 +18,7 @@ jobs:
   tests:
     permissions:
       contents: read
-    uses: dustfeather/shared-workflows/.github/workflows/node-test.yml@v2
+    uses: dustfeather/shared-workflows/.github/workflows/node-test.yml@v3
     with:
       runner: arc-df-uninsta
 
@@ -100,7 +100,7 @@ jobs:
 
   publish-chrome:
     needs: build
-    uses: dustfeather/shared-workflows/.github/workflows/publish-chrome.yml@v2
+    uses: dustfeather/shared-workflows/.github/workflows/publish-chrome.yml@v3
     with:
       runner: arc-df-uninsta
       zip-name: uninsta-extension.zip
@@ -108,7 +108,7 @@ jobs:
 
   publish-firefox:
     needs: build
-    uses: dustfeather/shared-workflows/.github/workflows/publish-firefox.yml@v2
+    uses: dustfeather/shared-workflows/.github/workflows/publish-firefox.yml@v3
     with:
       runner: arc-df-uninsta
       xpi-name: uninsta-extension.xpi
