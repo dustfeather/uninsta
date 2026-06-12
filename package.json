@@ -11,7 +11,7 @@
     "dev": "tsx scripts/dev.ts"
   },
   "devDependencies": {
-    "@types/chrome": "^0.1.42",
+    "@types/chrome": "^0.1.43",
     "@types/node": "^25.9.1",
     "archiver": "^8.0.0",
     "esbuild": "^0.28.0",
