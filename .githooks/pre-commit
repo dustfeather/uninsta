@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-commit gate: lint + typecheck + tests. Each runs only if its package.json
+# script exists. The same checks run in CI via shared-workflows node-test.yml.
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+PM=npm; [ -f pnpm-lock.yaml ] && PM=pnpm; { [ -f bun.lockb ] || [ -f bun.lock ]; } && PM=bun
+if [ ! -d node_modules ]; then
+  echo "[pre-commit] installing deps…"
+  case "$PM" in pnpm) pnpm install --frozen-lockfile;; bun) bun install --frozen-lockfile;; *) npm ci --no-audit --no-fund;; esac
+fi
+has() { node -e "process.exit((require('./package.json').scripts||{})['$1']?0:1)" 2>/dev/null; }
+run() { echo "[pre-commit] $1…"; case "$PM" in pnpm) pnpm run "$1";; bun) bun run "$1";; *) npm run --silent "$1";; esac; }
+for s in lint typecheck test; do has "$s" && run "$s"; done
+echo "[pre-commit] OK"
