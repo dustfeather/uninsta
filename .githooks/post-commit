@@ -1,0 +1,17 @@
+#!/bin/sh
+# vault-keeper:graphify-freshness — keep this repo's graph AND the federated
+# global graph current on every commit (AST-only, no LLM). Detached → never
+# blocks the commit. Bypass with GRAPHIFY_SKIP_HOOK=1. Managed by vault-graphify.sh.
+[ "${GRAPHIFY_SKIP_HOOK:-0}" = "1" ] && exit 0
+GD=$(git rev-parse --git-dir 2>/dev/null) || exit 0
+{ [ -d "$GD/rebase-merge" ] || [ -d "$GD/rebase-apply" ] || [ -f "$GD/MERGE_HEAD" ] || [ -f "$GD/CHERRY_PICK_HEAD" ]; } && exit 0
+PATH="$HOME/.local/bin:$PATH"; export PATH
+command -v graphify >/dev/null 2>&1 || exit 0
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+TAG=$(basename "$ROOT")
+LOG="$HOME/.cache/graphify-rebuild.log"; mkdir -p "$HOME/.cache"
+( cd "$ROOT" \
+  && PYTHONHASHSEED=0 graphify update . --force \
+  && graphify global add graphify-out/graph.json --as "$TAG" \
+) >>"$LOG" 2>&1 &
+exit 0
