@@ -13,12 +13,12 @@ const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'));
 const buildVersion =
   process.env.EXT_VERSION || process.env.UNINSTA_VERSION || pkg.version.replace(/-.*$/, '') || '0.0.0';
 
-// Optional per-browser target passed by the `build:<target>` scripts. When set,
-// build.ts emits the single canonical artifact the shared release-extension
-// workflow collects; when unset it does a legacy local build (both zips).
+// Optional target passed by the `build:<target>` scripts. When set, build.ts
+// emits the single canonical artifact the shared release-extension workflow
+// collects; when unset it does a legacy local build (both zips).
 const target = process.argv[2];
-if (target && target !== 'chrome' && target !== 'firefox') {
-  console.error(`Unknown build target "${target}" (expected chrome|firefox)`);
+if (target && target !== 'chrome' && target !== 'firefox' && target !== 'userscript') {
+  console.error(`Unknown build target "${target}" (expected chrome|firefox|userscript)`);
   process.exit(1);
 }
 
@@ -191,15 +191,26 @@ async function zipDir(dir: string, outPath: string): Promise<void> {
 
   if (target) {
     // Canonical artifact the shared release-extension workflow collects:
-    //   dist-artifacts/<base>-<target>-<tag>.<ext>   chrome -> .zip, firefox -> .xpi
-    const ext = target === 'firefox' ? 'xpi' : 'zip';
+    //   dist-artifacts/<base>-<target>-<tag>.<ext>
+    //   chrome -> .zip, firefox -> .xpi, userscript -> .user.js
     const base = process.env.BASE || pkg.name;
     const tag = process.env.TAG || `v${buildVersion}`;
     const artifactsDir = join(root, 'dist-artifacts');
     mkdirSync(artifactsDir, { recursive: true });
-    const out = join(artifactsDir, `${base}-${target}-${tag}.${ext}`);
-    rmSync(out, { force: true });
-    await zipDir(extDir, out);
+
+    if (target === 'userscript') {
+      // Ship the userscript in the GitHub Release (no store publish). Its
+      // @version header already carries buildVersion (EXT_VERSION-aware).
+      const out = join(artifactsDir, `${base}-userscript-${tag}.user.js`);
+      rmSync(out, { force: true });
+      cpSync(join(root, 'dist/uninsta.user.js'), out);
+      console.log(`Built ${out}`);
+    } else {
+      const ext = target === 'firefox' ? 'xpi' : 'zip';
+      const out = join(artifactsDir, `${base}-${target}-${tag}.${ext}`);
+      rmSync(out, { force: true });
+      await zipDir(extDir, out);
+    }
   } else {
     // Legacy local build: both browsers share the same extension dir.
     await Promise.all([

@@ -10,6 +10,7 @@
     "build": "tsx scripts/build.ts",
     "build:chrome": "tsx scripts/build.ts chrome",
     "build:firefox": "tsx scripts/build.ts firefox",
+    "build:userscript": "tsx scripts/build.ts userscript",
     "dev": "tsx scripts/dev.ts",
     "prepare": "git config core.hooksPath .githooks || true"
   },
