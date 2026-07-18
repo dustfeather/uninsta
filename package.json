@@ -8,6 +8,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsx scripts/build.ts",
+    "build:chrome": "tsx scripts/build.ts chrome",
+    "build:firefox": "tsx scripts/build.ts firefox",
     "dev": "tsx scripts/dev.ts",
     "prepare": "git config core.hooksPath .githooks || true"
   },
@@ -25,5 +27,12 @@
     "@parcel/watcher@2.5.6": true,
     "esbuild@0.28.0": true,
     "sharp@0.34.5": true
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "sharp"
+    ]
   }
 }

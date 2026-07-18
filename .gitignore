@@ -1,4 +1,5 @@
 node_modules/
 dist/
+dist-artifacts/
 # Added by code-review-graph
 .code-review-graph/

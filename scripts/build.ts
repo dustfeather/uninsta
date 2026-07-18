@@ -1,5 +1,5 @@
 import { buildSync } from 'esbuild';
-import { readFileSync, writeFileSync, mkdirSync, cpSync, createWriteStream } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, cpSync, createWriteStream, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -10,7 +10,17 @@ import sharp from 'sharp';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'));
-const buildVersion = process.env.UNINSTA_VERSION || pkg.version.replace(/-.*$/, '') || '0.0.0';
+const buildVersion =
+  process.env.EXT_VERSION || process.env.UNINSTA_VERSION || pkg.version.replace(/-.*$/, '') || '0.0.0';
+
+// Optional per-browser target passed by the `build:<target>` scripts. When set,
+// build.ts emits the single canonical artifact the shared release-extension
+// workflow collects; when unset it does a legacy local build (both zips).
+const target = process.argv[2];
+if (target && target !== 'chrome' && target !== 'firefox') {
+  console.error(`Unknown build target "${target}" (expected chrome|firefox)`);
+  process.exit(1);
+}
 
 // ── 0. Compile SCSS ─────────────────────────────────────────────────────────
 
@@ -120,10 +130,14 @@ const manifest = {
       world: 'ISOLATED',
     },
   ],
-  background: {
-    service_worker: 'background.js',
-    scripts: ['background.js'],
-  },
+  // Chrome MV3 uses a service worker; Firefox MV3 uses a background scripts
+  // (event page). Default (no target) keeps both keys for a local dual build.
+  background:
+    target === 'firefox'
+      ? { scripts: ['background.js'] }
+      : target === 'chrome'
+        ? { service_worker: 'background.js' }
+        : { service_worker: 'background.js', scripts: ['background.js'] },
   browser_specific_settings: {
     gecko: {
       id: 'uninsta@dustfeather',
@@ -175,8 +189,22 @@ async function zipDir(dir: string, outPath: string): Promise<void> {
   await generateGrayIcons();
   console.log(`Built dist/extension/ (v${buildVersion})`);
 
-  await Promise.all([
-    zipDir(extDir, join(root, 'dist/uninsta-extension.zip')),
-    zipDir(extDir, join(root, 'dist/uninsta-extension.xpi')),
-  ]);
+  if (target) {
+    // Canonical artifact the shared release-extension workflow collects:
+    //   dist-artifacts/<base>-<target>-<tag>.<ext>   chrome -> .zip, firefox -> .xpi
+    const ext = target === 'firefox' ? 'xpi' : 'zip';
+    const base = process.env.BASE || pkg.name;
+    const tag = process.env.TAG || `v${buildVersion}`;
+    const artifactsDir = join(root, 'dist-artifacts');
+    mkdirSync(artifactsDir, { recursive: true });
+    const out = join(artifactsDir, `${base}-${target}-${tag}.${ext}`);
+    rmSync(out, { force: true });
+    await zipDir(extDir, out);
+  } else {
+    // Legacy local build: both browsers share the same extension dir.
+    await Promise.all([
+      zipDir(extDir, join(root, 'dist/uninsta-extension.zip')),
+      zipDir(extDir, join(root, 'dist/uninsta-extension.xpi')),
+    ]);
+  }
 })();
