@@ -1,3 +1,5 @@
+[![Release](https://github.com/dustfeather/uninsta/actions/workflows/release.yml/badge.svg)](https://github.com/dustfeather/uninsta/actions/workflows/release.yml)
+
 <p align="center">
   <img src="extension/icons/icon128.png" alt="unInsta logo" width="128">
 </p>
