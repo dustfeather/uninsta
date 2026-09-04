@@ -22,6 +22,8 @@ jobs:
     with:
       runner: arc-df-uninsta
       run-build: true
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   review:
     if: github.event.action != 'closed'
