@@ -15,7 +15,7 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
-    "@types/chrome": "^0.2.5",
+    "@types/chrome": "^0.2.9",
     "@types/node": "^26.1.2",
     "archiver": "^8.0.0",
     "esbuild": "^0.28.1",
