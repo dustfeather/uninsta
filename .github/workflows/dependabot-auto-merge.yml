@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: dustfeather/shared-workflows/.github/workflows/dependabot-auto-merge.yml@v4
+    uses: dustfeather/shared-workflows/.github/workflows/dependabot-auto-merge.yml@v5
     with:
       runner: arc-df-uninsta
       # `direct` so the merge lands inside this run — see the same comment in

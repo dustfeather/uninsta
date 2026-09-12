@@ -32,7 +32,7 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       github.event.workflow_run.conclusion == 'success'
-    uses: dustfeather/shared-workflows/.github/workflows/release-extension.yml@v4
+    uses: dustfeather/shared-workflows/.github/workflows/release-extension.yml@v5
     with:
       runner: arc-df-uninsta
       targets: '["chrome","firefox","userscript"]'
