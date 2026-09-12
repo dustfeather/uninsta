@@ -17,10 +17,11 @@ jobs:
   merge:
     # This gate duplicates, on purpose, filters the reusable workflow already
     # applies internally. The inner `if:` decides whether to MERGE; this one
-    # decides whether this workflow RUNS at all — and `release.yml` now keys
-    # off this run completing. A run whose only job SKIPPED still concludes
-    # `success` and still raises `workflow_run`, so without this every review
-    # posted on any PR would wake the release job.
+    # decides whether this workflow RUNS at all. `release.yml` keys off this
+    # run and guards on `conclusion == 'success'`; a run whose only job is
+    # filtered out concludes `skipped`, so that guard already drops it. This
+    # gate stops the pointless run existing, and keeps the intent readable
+    # next to the trigger.
     #
     # The author test also closes a real hole: this repo is public and `main`
     # is unprotected, so without it any account could submit an approving

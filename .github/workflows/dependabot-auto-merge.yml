@@ -10,10 +10,10 @@ permissions:
 jobs:
   merge:
     # Duplicates the reusable workflow's own author/state test on purpose.
-    # That one decides whether to MERGE; this one decides whether this
-    # workflow RUNS, and `release.yml` keys off this run completing — a run
-    # whose only job SKIPPED still concludes `success` and still raises
-    # `workflow_run`.
+    # That one decides whether to MERGE; this one whether this workflow RUNS.
+    # A filtered-out run concludes `skipped`, which `release.yml`'s
+    # `conclusion == 'success'` guard already drops — this keeps the run from
+    # being created at all.
     if: >-
       github.event.review.state == 'approved' &&
       github.event.pull_request.user.login == 'dependabot[bot]'
