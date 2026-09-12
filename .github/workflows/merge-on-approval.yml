@@ -15,9 +15,34 @@ permissions:
 
 jobs:
   merge:
+    # This gate duplicates, on purpose, filters the reusable workflow already
+    # applies internally. The inner `if:` decides whether to MERGE; this one
+    # decides whether this workflow RUNS at all — and `release.yml` now keys
+    # off this run completing. A run whose only job SKIPPED still concludes
+    # `success` and still raises `workflow_run`, so without this every review
+    # posted on any PR would wake the release job.
+    #
+    # The author test also closes a real hole: this repo is public and `main`
+    # is unprotected, so without it any account could submit an approving
+    # review on any open PR and land it. `claude[bot]` is named explicitly
+    # because the review agent's `author_association` is NONE, not
+    # OWNER/MEMBER/COLLABORATOR — the association test alone would reject the
+    # very approval this workflow exists for.
+    if: >-
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.draft == false &&
+      (github.event.review.user.login == 'claude[bot]' ||
+       contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.review.author_association))
     permissions:
       contents: write
       pull-requests: write
     uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v4
     with:
       runner: arc-df-uninsta
+      # `direct`, not the reusable workflow's `auto` default. `release.yml`
+      # keys off THIS run finishing, and `--auto` hands the merge to GitHub
+      # and returns straight away — so the job could complete, raising
+      # `workflow_run`, while `main` is still the pre-merge commit and the
+      # release would build the wrong tree. `direct` merges inside the step,
+      # so the run only completes once `main` has actually moved.
+      mode: direct

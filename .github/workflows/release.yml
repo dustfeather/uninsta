@@ -1,8 +1,20 @@
 name: Release
 
+# A bot merge raises NO push event: GitHub creates no workflow run from any
+# event authored by the default `GITHUB_TOKEN`, which is what the merge shims
+# use. That suppression belongs to the token, not the trigger, so there is no
+# merge-shaped event to listen for instead — `pull_request: [closed]` is dead
+# the same way. `workflow_run` is the only escape hatch, because the
+# triggering run's own lifecycle raises it rather than a token.
+#
+# Matched by workflow NAME, not path. Renaming either shim's `name:` silently
+# stops releases from being cut, with nothing in any log saying why.
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["Merge on approval", "Dependabot auto-merge"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -13,6 +25,13 @@ concurrency:
 
 jobs:
   release:
+    # On the push path there is nothing to check. On the workflow_run path,
+    # only a successful merge run means `main` actually moved — a shim whose
+    # job was skipped still completes `success` at the RUN level, but its
+    # gates above mean it only runs when a merge is really happening.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.workflow_run.conclusion == 'success'
     uses: dustfeather/shared-workflows/.github/workflows/release-extension.yml@v4
     with:
       runner: arc-df-uninsta

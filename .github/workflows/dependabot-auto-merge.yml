@@ -9,9 +9,20 @@ permissions:
 
 jobs:
   merge:
+    # Duplicates the reusable workflow's own author/state test on purpose.
+    # That one decides whether to MERGE; this one decides whether this
+    # workflow RUNS, and `release.yml` keys off this run completing — a run
+    # whose only job SKIPPED still concludes `success` and still raises
+    # `workflow_run`.
+    if: >-
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.user.login == 'dependabot[bot]'
     permissions:
       contents: write
       pull-requests: write
     uses: dustfeather/shared-workflows/.github/workflows/dependabot-auto-merge.yml@v4
     with:
       runner: arc-df-uninsta
+      # `direct` so the merge lands inside this run — see the same comment in
+      # merge-on-approval.yml. `release.yml` reacts to this run finishing.
+      mode: direct
