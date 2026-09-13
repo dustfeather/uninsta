@@ -20,6 +20,16 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      # Granted ahead of the callee requesting it. shared-workflows'
+      # dependabot-auto-merge closes the PR's linked issues itself after a
+      # `direct` merge, and that write needs this scope — without it a merged
+      # `Closes #N` stores the link and silently never closes.
+      #
+      # A caller may always grant MORE than the callee asks; a callee asking
+      # for more than the caller grants is a startup_failure with zero jobs and
+      # an empty `--log-failed`. So this lands FIRST, in every caller, before
+      # the scope is added to the reusable workflow.
+      issues: write
     uses: dustfeather/shared-workflows/.github/workflows/dependabot-auto-merge.yml@v5
     with:
       runner: arc-df-uninsta
