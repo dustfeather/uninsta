@@ -37,6 +37,15 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      # Required for a merged `Closes #N` to actually close the issue. GitHub
+      # computes the link for free, but EXECUTING the close is a write to the
+      # Issues API attributed to whoever performed the merge — and this merge is
+      # performed by GITHUB_TOKEN inside the reusable workflow. Without this scope
+      # the link is stored and the close silently never runs, with no warning and
+      # a green workflow. Granted here BEFORE the reusable workflow asks for it:
+      # a caller may always grant more than the callee needs, but a callee asking
+      # for more than a caller grants is a startup_failure with zero jobs.
+      issues: write
     uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v5
     with:
       runner: arc-df-uninsta
