@@ -46,7 +46,7 @@ jobs:
       # a caller may always grant more than the callee needs, but a callee asking
       # for more than a caller grants is a startup_failure with zero jobs.
       issues: write
-    uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v5
+    uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v6
     with:
       runner: arc-df-uninsta
       # `direct`, not the reusable workflow's `auto` default. `release.yml`
