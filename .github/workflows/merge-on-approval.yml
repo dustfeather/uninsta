@@ -13,6 +13,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # Serialise per PR: a burst of approvals across open PRs must not queue
+  # several runners on this repo's shared ARC pool at once. Deliberately no
+  # `cancel-in-progress` — a merge in flight must never be killed half-way.
+  # Mirrors dustfeather/shared-workflows/.github/workflows/pr-merge.yml.
+  group: pr-merge-${{ github.event.pull_request.number }}
+
 jobs:
   merge:
     # This gate duplicates, on purpose, filters the reusable workflow already
