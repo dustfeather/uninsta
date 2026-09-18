@@ -7,6 +7,14 @@ on:
 permissions:
   contents: read
 
+# Serialise per PR: an approval burst (or a re-run of the upstream workflow)
+# must not start a second merge of the same PR while the first is still in
+# flight. No `cancel-in-progress` on purpose — unlike the review workflows this
+# one performs a merge, and killing a run mid-merge leaves the PR in a state
+# nothing retries. Queueing costs a little time; cancelling costs correctness.
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+
 jobs:
   merge:
     # Duplicates the reusable workflow's own author/state test on purpose.
