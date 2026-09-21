@@ -1,25 +1,23 @@
-# Settings duplicated from package.json's `pnpm` block on purpose. pnpm 10 —
-# the version CI installs, pinned by shared-workflows node-test.yml — reads
-# `overrides` and `onlyBuiltDependencies` from package.json and ignores this
-# file. pnpm 11+ is the reverse: it ignores the package.json block entirely
-# ("The \"pnpm\" field in package.json is no longer read by pnpm") and reads
-# only this file. Keeping both homes is what lets the same checkout install
-# under either major. The two MUST stay in sync: whichever pnpm finds no
-# overrides regenerates pnpm-lock.yaml without its top-level `overrides:`
-# block, and every later --frozen-lockfile then fails with
-# ERR_PNPM_LOCKFILE_CONFIG_MISMATCH.
+# The single home for pnpm settings. pnpm reads them from here on every version
+# CI or a contributor is likely to run: 10.6+ honours this file, and 11+ reads
+# ONLY this file, having dropped the `pnpm` field in package.json ("The \"pnpm\"
+# field in package.json is no longer read by pnpm"). A pnpm that finds no
+# overrides regenerates pnpm-lock.yaml without its top-level `overrides:` block,
+# and every later --frozen-lockfile then fails with
+# ERR_PNPM_LOCKFILE_CONFIG_MISMATCH -- which is how the Dependabot PRs this
+# replaced were breaking.
 overrides:
   brace-expansion: '>=5.0.9'
   immutable: '>=5.1.8'
 
-# pnpm 11 spelling.
+# pnpm 10/11 spelling of the build-script allowlist.
 onlyBuiltDependencies:
   - '@parcel/watcher'
   - esbuild
   - sharp
 
-# pnpm 12 spelling. Without it pnpm 12 refuses the install with
-# ERR_PNPM_IGNORED_BUILDS, which takes .githooks/pre-commit down with it.
+# pnpm 12 renamed it again. Without this, pnpm 12 stops at
+# ERR_PNPM_IGNORED_BUILDS and takes .githooks/pre-commit down with it.
 allowBuilds:
   '@parcel/watcher': true
   esbuild: true
