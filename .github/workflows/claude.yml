@@ -30,7 +30,7 @@ jobs:
       issues: read
       id-token: write
       actions: read
-    uses: dustfeather/shared-workflows/.github/workflows/claude.yml@v6
+    uses: dustfeather/shared-workflows/.github/workflows/claude.yml@v7
     with:
       # Deliberately not this repo's ARC pool. Every pool schedules onto the
       # same 4-core node, where each runner pod reserves 1000m as IO admission
