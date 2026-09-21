@@ -10,14 +10,20 @@ overrides:
   brace-expansion: '>=5.0.9'
   immutable: '>=5.1.8'
 
-# pnpm 10/11 spelling of the build-script allowlist.
+# pnpm 10's spelling of the build-script allowlist, kept only for a contributor
+# still on that major. CI is on 11.19.0, which does not read this block at all.
 onlyBuiltDependencies:
   - '@parcel/watcher'
   - esbuild
   - sharp
 
-# pnpm 12 renamed it again. Without this, pnpm 12 stops at
-# ERR_PNPM_IGNORED_BUILDS and takes .githooks/pre-commit down with it.
+# pnpm 11.0.0 renamed it, and 12 kept the new name. This is the block that is
+# live on CI; without it, install stops at ERR_PNPM_IGNORED_BUILDS and takes
+# .githooks/pre-commit down with it. The comment above used to put the rename
+# at 12, which made the list above look like the one pnpm 11 reads. Counted in
+# the shipped bundles: pnpm 10.20.0 has 0 references to allowBuilds and 35 to
+# onlyBuiltDependencies, 11.0.0 has 77 and 0, 11.19.0 has 87 and 3 -- and those
+# three are its legacy-key migration list plus one error hint, not a read.
 allowBuilds:
   '@parcel/watcher': true
   esbuild: true
