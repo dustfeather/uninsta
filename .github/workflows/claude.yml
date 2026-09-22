@@ -30,14 +30,5 @@ jobs:
       issues: read
       id-token: write
       actions: read
-    uses: dustfeather/shared-workflows/.github/workflows/claude.yml@v7
-    with:
-      # Deliberately not this repo's ARC pool. Every pool schedules onto the
-      # same 4-core node, where each runner pod reserves 1000m as IO admission
-      # control, so the cluster admits two runner pods at a time in total. An
-      # interactive Claude session is minutes of API wait rather than local CPU
-      # or disk, so parking it on a self-hosted runner holds half the cluster's
-      # CI budget for work the node contributes nothing to, and real test jobs
-      # queue behind it. (ITGuys-RO/k3s-cluster#16)
-      runner: ubuntu-latest
+    uses: dustfeather/shared-workflows/.github/workflows/claude.yml@v8
     secrets: inherit

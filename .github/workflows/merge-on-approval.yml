@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   # Serialise per PR: a burst of approvals across open PRs must not queue
-  # several runners on this repo's shared ARC pool at once. Deliberately no
+  # several merge runners at once. Deliberately no
   # `cancel-in-progress` — a merge in flight must never be killed half-way.
   # Mirrors dustfeather/shared-workflows/.github/workflows/pr-merge.yml.
   group: pr-merge-${{ github.event.pull_request.number }}
@@ -53,9 +53,8 @@ jobs:
       # a caller may always grant more than the callee needs, but a callee asking
       # for more than a caller grants is a startup_failure with zero jobs.
       issues: write
-    uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v7
+    uses: dustfeather/shared-workflows/.github/workflows/merge-on-approval.yml@v8
     with:
-      runner: arc-df-uninsta
       # `direct`, not the reusable workflow's `auto` default. `release.yml`
       # keys off THIS run finishing, and `--auto` hands the merge to GitHub
       # and returns straight away — so the job could complete, raising
