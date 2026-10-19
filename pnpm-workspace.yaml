@@ -7,7 +7,8 @@
 # ERR_PNPM_LOCKFILE_CONFIG_MISMATCH -- which is how the Dependabot PRs this
 # replaced were breaking.
 overrides:
-  brace-expansion: '>=5.0.9'
+  'source-map-js': '>=1.2.2'
+  brace-expansion: '>=5.0.11'
   immutable: '>=5.1.8'
 
 # pnpm 10's spelling of the build-script allowlist, kept only for a contributor
