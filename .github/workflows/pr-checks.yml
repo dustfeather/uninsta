@@ -20,6 +20,7 @@ jobs:
       contents: read
     uses: dustfeather/shared-workflows/.github/workflows/node-test.yml@v8
     with:
+      runner: arc-df-uninsta
       run-build: true
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -36,4 +37,6 @@ jobs:
       issues: read
       id-token: write
     uses: dustfeather/shared-workflows/.github/workflows/claude-code-review.yml@v8
+    with:
+      runner: arc-df-uninsta
     secrets: inherit

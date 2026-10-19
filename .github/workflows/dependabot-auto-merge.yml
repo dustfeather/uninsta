@@ -40,6 +40,7 @@ jobs:
       issues: write
     uses: dustfeather/shared-workflows/.github/workflows/dependabot-auto-merge.yml@v8
     with:
+      runner: arc-df-uninsta
       # `direct` so the merge lands inside this run — see the same comment in
       # merge-on-approval.yml. `release.yml` reacts to this run finishing.
       mode: direct
