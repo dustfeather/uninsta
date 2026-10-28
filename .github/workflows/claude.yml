@@ -30,7 +30,7 @@ jobs:
       issues: read
       id-token: write
       actions: read
-    uses: dustfeather/shared-workflows/.github/workflows/claude.yml@v8
+    uses: dustfeather/shared-workflows/.github/workflows/claude.yml@v9
     with:
       runner: arc-df-uninsta
     secrets: inherit
