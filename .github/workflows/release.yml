@@ -1,20 +1,11 @@
 name: Release
 
-# A bot merge raises NO push event: GitHub creates no workflow run from any
-# event authored by the default `GITHUB_TOKEN`, which is what the merge shims
-# use. That suppression belongs to the token, not the trigger, so there is no
-# merge-shaped event to listen for instead — `pull_request: [closed]` is dead
-# the same way. `workflow_run` is the only escape hatch, because the
-# triggering run's own lifecycle raises it rather than a token.
-#
-# Matched by workflow NAME, not path. Renaming either shim's `name:` silently
-# stops releases from being cut, with nothing in any log saying why.
+# No workflow merges PRs any more, so every merge to main raises a push
+# event. The `workflow_run` branches in the `if:` expressions below date from
+# the bot-merge shims and are unreachable now; a push passes them.
 on:
   push:
     branches: [main]
-  workflow_run:
-    workflows: ["Merge on approval", "Dependabot auto-merge"]
-    types: [completed]
 
 permissions:
   contents: write

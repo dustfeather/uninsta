@@ -36,7 +36,7 @@ Pipeline versions / runners differ:
 - **discord-purge**, **uninsta** — shared workflows pinned `@v1`, GitHub-hosted `ubuntu-latest`.
 - **FileList Monitor**, **Auto Skip** — shared workflows pinned `@v2`, self-hosted k3s ARC runners (`arc-df-filelist-ext`, `arc-df-series-auto-skip`) hosted in [Homelab](https://github.com/ITGuys-RO/k3s-cluster/blob/main/docs/homelab.md).
 
-All four also share `claude.yml`, `pr-checks.yml`, and `dependabot-auto-merge.yml` referencing [shared-workflows](https://github.com/dustfeather/shared-workflows/blob/main/docs/OVERVIEW.md).
+All four also share `pr-checks.yml` referencing [shared-workflows](https://github.com/dustfeather/shared-workflows/blob/main/docs/OVERVIEW.md).
 
 ### uninsta
 

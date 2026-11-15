@@ -3,8 +3,6 @@ name: PR checks
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
-    paths-ignore:
-      - '.github/workflows/pr-checks.yml'
 
 permissions:
   contents: read
@@ -25,18 +23,3 @@ jobs:
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  review:
-    # Human PRs are reviewed locally with the /code-review plugin, not in CI.
-    # What stays here is the Dependabot track, which ends on an approve/request-
-    # changes and so feeds dependabot-auto-merge.yml / merge-on-approval.yml.
-    if: github.event.action != 'closed' && github.event.pull_request.user.login == 'dependabot[bot]'
-    needs: tests
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: read
-      id-token: write
-    uses: dustfeather/shared-workflows/.github/workflows/claude-code-review.yml@v9
-    with:
-      runner: arc-df-uninsta
-    secrets: inherit
