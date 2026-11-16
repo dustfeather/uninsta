@@ -16,7 +16,7 @@ jobs:
     if: github.event.action != 'closed'
     permissions:
       contents: read
-    uses: dustfeather/shared-workflows/.github/workflows/node-test.yml@v9
+    uses: dustfeather/shared-workflows/.github/workflows/node-test.yml@v10
     with:
       runner: arc-df-uninsta
       run-build: true
